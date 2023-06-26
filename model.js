@@ -45,8 +45,8 @@ function calcCL(aoa) {
     const dc = 2 * Math.PI * Math.PI / 180; // 0.10955
     const stall_a0 = -12;
     const stall_a1 =  20;
-    const cl_a0    =  -0.8;
-    const cl_max   = 2.50;
+    const cl_a0    =  -0.9;
+    const cl_max   = 2.00;
     const cl0      = 0.05;
     let cl = 0;
     
@@ -99,8 +99,8 @@ function calcCD(aoa) {
     const cd_stall0 = 0.03;
     const min_a1    = -1;
     const min_a0    = -4;
-    const cd_20     = 0.15;
-    const cd_10     = 0.05;
+    const cd_20     = 0.12;
+    const cd_10     = 0.03;
     const cd_2      = 0.02;
     const cd_m20    = 0.30;
     let cd = 0;
