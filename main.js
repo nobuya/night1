@@ -197,6 +197,32 @@ function calc(p) {
 
 
 function controle(p) {
+    if (keyboard.Left)  if (p.aileron > -25) p.aileron -= 1;
+    if (keyboard.Right) if (p.aileron < 25)  p.aileron += 1;
+    if (keyboard.Z)     p.rudder  -= 1;
+    if (keyboard.X)     p.rudder  += 1;
+//    if (keyboard.Up)    ptc = (ptc + 0.1) % 360;
+//    if (keyboard.Down)  ptc = (ptc - 0.1 + 360) % 360;
+    if (keyboard.Up)    if (p.elevator < 25)  p.elevator += 1;
+    if (keyboard.Down)  if (p.elevator > -25) p.elevator -= 1;
+    if (keyboard.Q)     p.thr = (p.thr < 100) ? p.thr + 0.1 : p.thr;
+    if (keyboard.A)     p.thr = (p.thr > 0) ?   p.thr - 0.1 : p.thr;
+    if (keyboard.S) {
+	stop = stop ? false : true;
+    }
+    if (keyboard.P) {
+	if (drawCount % 30 == 0) {
+	    pauseMode = true;
+	}
+    }
+    if (DEBUG) {
+	if (keyboard.D) {
+	    debugMode = debugMode ? false : true;
+	}
+    }
+} // function controle(p)
+
+function controle__(p) {
     if (keyboard.Left)  p.bnk = (p.bnk - 0.2 + 360) % 360;
     if (keyboard.Right) p.bnk = (p.bnk + 0.2) % 360;
     if (keyboard.Z)     p.hdg = (p.hdg - 0.1 + 360) % 360;
@@ -211,7 +237,9 @@ function controle(p) {
 	stop = stop ? false : true;
     }
     if (keyboard.P) {
-	pauseMode = true;
+	if (drawCount % 30 == 0) {
+	    pauseMode = true;
+	}
     }
     if (DEBUG) {
 	if (keyboard.D) {
@@ -242,7 +270,9 @@ function controlePauseMode(p) {
 	p.dz = 0;
     }
     if (keyboard.P) {
-	pauseMode = false;
+	if (drawCount % 30 == 0) {
+	    pauseMode = false;
+	}
     }
     if (DEBUG) {
 	if (keyboard.D) {
@@ -269,7 +299,7 @@ function updateAll() {
     //attitude();
     //model();
     plane.update1();
-    
+
     if (!stop) {
 	//move();
 	plane.update();
@@ -459,6 +489,29 @@ function drawForce(p) {
     drawLine([cx4, yy5], [cx4, cy], yellow); // lift2
 } // function drawForce(p) 
 
+function drawController(p) {
+    let cx = 450;
+    let cy = 400;
+    let w  = 50;
+    let h = 50;
+    let w2 = w / 2;
+    let h2 = h / 2;
+    let y2 = cy + w2 + 10;
+    let blue = "#3333DD";
+
+    drawLine([cx - w2, cy], [cx + w2, cy], blue);
+    drawLine([cx, cy - h2], [cx, cy + h2], blue);
+    drawLine([cx - w2, y2], [cx + w2, y2], blue);
+    drawLine([cx, y2 - 4], [cx, y2 + 4], blue);
+
+    let yellow = "#CCCC00";
+    let yy1 = -p.elevator * 1 + cy;
+    let xx1 =  p.aileron * 1  + cx;
+    drawLine([cx - w2, yy1], [cx + w2, yy1], yellow);
+    drawLine([xx1, cy - h2], [xx1, cy + h2], yellow);
+    
+} // drawController(p)
+
 function drawThrottle(p) {
     let x0 = 600
     let y0 = 300
@@ -486,14 +539,10 @@ function drawThrottle(p) {
 	drawLine([x1 + 2,  y], [x1 + 6, y], blue);
     }
 	 
-    let y = y1 - (thr / 100 * h);
-    ctx.beginPath();
-    ctx.moveTo(x0 + 2, y);
-    ctx.lineTo(x1 - 2, y);
-    ctx.closePath();
-    ctx.stroke();
-
     let yellow = "#CCCC00";
+    let y = y1 - (thr / 100 * h);
+    drawLine([x0 + 2, y], [x1 - 2, y], yellow);
+
     let y2 = y1 - (plane.thrust / plane.thrust_max * h) 
     drawLine([x0 + w / 2, y2], [x0 + w / 2, y1], yellow);
 
@@ -543,6 +592,7 @@ function drawAll() {
     drawVec(plane);
     drawVangle(plane);
     
+    drawController(plane);
     drawThrottle(plane);
     drawForce(plane);
     drawCL(plane);

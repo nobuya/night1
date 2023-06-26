@@ -50,7 +50,13 @@ class Airplane {
 	this.cd = 0;
 	this.cm = 0;
 	this.ptc_mo = 0;
-    }
+	//
+	this.aileron  = 0;
+	this.elevator = 0;
+	this.rudder   = 0;
+	//
+	this.counter  = 0;
+    } // constructor(pos)
 
     model() {
 	let v0 = this.velocity; // (m/sec)
@@ -130,12 +136,14 @@ class Airplane {
     
 	let dh = Math.atan(this.velx / this.vely) / Math.PI * 180;
     
-	this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh;
-	this.dbnk = 0;
+	this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
+	this.dbnk = 0.20 * this.aileron * dt;
 	//dptc = Math.abs(-vangle - ptc) < 0.002 ? 0.0 : (-vangle - ptc) * 0.5;
 	//dptc = Math.abs(vangle) < 0.002 ? 0.0 : vangle * 0.3;
 
-	let dp = 0.0005 * this.lift2 * dt;
+	let dp = 0.10 * dt * this.elevator;
+	//let dp = 0.05 * this.lift2 * dt * this.elevator;
+	//let dp = 0.0005 * this.lift2 * dt;
 	//let mo = -ptc_mo * dt;
 	//dptc = Math.abs(vangle) < 0.002 ? 0.0 : (vangle * 0.05);
 	//dptc = dptc + elev;
@@ -161,9 +169,18 @@ class Airplane {
 	this.dy = dy5 / 60;
 	this.dz = dz5 / 60;
 
-	this.hdg += this.dhdg;
+	this.hdg = (this.hdg + this.dhdg + 360) % 360;
 	this.bnk += this.dbnk;
 	this.ptc += this.dptc;
+
+	this.counter += 1;
+	if (this.counter == 10) {
+	    if (this.aileron > 0) this.aileron -= 1;
+	    else if (this.aileron < 0) this.aileron += 1;
+	    if (this.elevator > 0) this.elevator -= 1;
+	    else if (this.elevator < 0) this.elevator += 1;
+	    this.counter = 0;
+	}
 	//ptc += (elev < ptc) ? -0.005 : (elev > ptc) ? 0.005 : 0;
     } // attitude()
     
