@@ -43,6 +43,49 @@ function calcCL__(aoa) {
 function calcCL(aoa) {
     // 揚力傾斜 (2 x PI)
     const dc = 2 * Math.PI * Math.PI / 180; // 0.10955
+    const b = 0.9;
+    const dc2 = dc * b;
+    const stall_a0 = -8;
+    const a15      =  15;
+    const stall_a1 =  18;
+    const stall_a2 =  20;
+    const cl_a0    =  -0.6;
+    const cl_a1    = 1.50;
+    const cl_max   = 2.00;
+    const cl0      = 0.05;
+    const cl8  = dc2 * (15 - stall_a0) + cl_a0;
+    const cl15 = dc2 * 0.8 * (15 - 10) + cl8;
+    let cl = 0;
+    
+    if (aoa > stall_a2) { // 20
+	let a = aoa - stall_a2;
+	let cl1 = cl_max - a * 0.30;
+	cl = cl1;
+    } else if (aoa > stall_a1) { // 18
+	let a = aoa - stall_a1;
+	cl = cl_max;
+    } else if (aoa > a15) { // 15
+	let a = aoa - a15;
+	let bb = (cl_max - cl15) / (stall_a1 - a15);
+	let cl1 = bb * a + cl15;
+	cl = cl1;
+    } else if (aoa > 10) {
+	let a = aoa - 10;
+	let cl8 = dc2 * (aoa - stall_a0) + cl_a0;
+	let cl1 = dc2 * 0.8 * a + cl8;
+	cl = cl1 > cl_max ? cl_max : cl1;
+    } else if (aoa > stall_a0) {
+	let a = aoa - stall_a0;
+	cl = dc2 * a + cl_a0;
+    } else {
+	cl = cl_a0;
+    }
+    return Math.floor(cl * 10000) / 10000;
+} // function calcCL(aoa) 
+
+function calcCL1(aoa) {
+    // 揚力傾斜 (2 x PI)
+    const dc = 2 * Math.PI * Math.PI / 180; // 0.10955
     const stall_a0 = -12;
     const stall_a1 =  20;
     const cl_a0    =  -0.9;
@@ -66,7 +109,7 @@ function calcCL(aoa) {
 	cl = cl_a0;
     }
     return Math.floor(cl * 10000) / 10000;
-} // function calcCL(aoa) 
+} // function calcCL1(aoa) 
 
 function calcCD___(aoa) {
     const cd_15 = 0.10;

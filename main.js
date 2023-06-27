@@ -207,6 +207,7 @@ function controle(p) {
     if (keyboard.Down)  if (p.elevator > -25) p.elevator -= 1;
     if (keyboard.Q)     p.thr = (p.thr < 100) ? p.thr + 0.1 : p.thr;
     if (keyboard.A)     p.thr = (p.thr > 0) ?   p.thr - 0.1 : p.thr;
+    if (keyboard.F)     p.select = (p.select + 1) % 4;
     if (keyboard.S) {
 	stop = stop ? false : true;
     }
@@ -249,12 +250,19 @@ function controle__(p) {
 } // function controle(p)
 
 function controlePauseMode(p) {
-    if (keyboard.Left)  p.bnk = (p.bnk - 0.2 + 360) % 360;
-    if (keyboard.Right) p.bnk = (p.bnk + 0.2) % 360;
+    if (keyboard.Shift) {
+	if (keyboard.Left)  p.dx -= 0.1;
+	if (keyboard.Right) p.dx += 0.1;
+	if (keyboard.Up)    p.dy += 0.1;
+	if (keyboard.Down)  p.dy -= 0.1;
+    } else {
+	if (keyboard.Left) p.bnk = p.bnk - 0.2;
+	if (keyboard.Right) p.bnk = p.bnk + 0.2;
+	if (keyboard.Up)    p.ptc = (p.ptc + 0.1) % 360;
+	if (keyboard.Down)  p.ptc = (p.ptc - 0.1 + 360) % 360;
+    }
     if (keyboard.Z)     p.hdg = (p.hdg - 0.1 + 360) % 360;
     if (keyboard.X)     p.hdg = (p.hdg + 0.1) % 360;
-    if (keyboard.Up)    p.ptc = (p.ptc + 0.1) % 360;
-    if (keyboard.Down)  p.ptc = (p.ptc - 0.1 + 360) % 360;
 //    if (keyboard.Up)    elev = elev + 0.0025;
 //    if (keyboard.Down)  elev = elev - 0.0025;
     if (keyboard.Left2)  p.dx -= 0.1;
@@ -263,6 +271,7 @@ function controlePauseMode(p) {
     if (keyboard.A)      p.dy -= 0.1;
     if (keyboard.K)      p.dz -= 0.1;
     if (keyboard.L)      p.dz += 0.1;
+    if (keyboard.F)      p.select = (p.select + 1) % 4;
     if (keyboard.S) {
 	//stop = stop ? false : true;
 	p.dx = 0;
@@ -317,11 +326,11 @@ function updateAllPauseMode() {
 //	plane.model();
 //	n++;
 //    }
-    plane.model();
+    plane.update();  
+    //plane.update1();
     //calc(plane.x, plane.y, plane.z, plane.hdg, plane.ptc, plane.bnk);
     calc(plane);
-    //plane.update1();
-    plane.update();
+    //plane.update();
     //move();
 } // function updateAllPauseMode()
 
@@ -425,6 +434,7 @@ function drawLines() {
     drawLine([cx, 270], [cx, 300], "#3333DD");
 } // function drawLines()
 
+/*
 function drawOne() {
     ctx.fillStyle = "#888888";
     ctx.beginPath();
@@ -437,8 +447,7 @@ function drawOne() {
     ctx.fill();
     ctx.stroke();
 }
-
-
+*/
 
 // draw score
 function drawScore() {
@@ -453,6 +462,68 @@ function drawLives() {
     ctx.fillStyle = "#0000DD";
     ctx.fillText(`Lives: ${lives}`, canvas.width - 65, 20);
 } // function drawLives()
+
+function drawHorizontalIndicator(p) {
+    let cx = 320;
+    let cy = 330;
+    let w  = 60;
+    let h  = 60;
+    let r  = 30
+    let w2 = w / 2;
+    let h2 = w / 2;
+    let blue = "#0000DD";
+    drawLine([cx - w2, cy], [cx + w2, cy], blue);
+    drawLine([cx, cy - h2], [cx, cy + h2], blue);
+
+    let white = "#BBBBBB";
+    let bnk = p.bnk;
+    let ptc = p.ptc;
+
+    for (let b = -30; b <= 30; b += 5) {
+	let r1 = b % 10 == 0 ? r - 1 : r - 3;
+	let x1 = Math.sin(Math.PI / 180 * b) * r1;
+	let y1 = Math.cos(Math.PI / 180 * b) * r1;
+	let r2 = r - 5;
+	let x2 = Math.sin(Math.PI / 180 * b) * r2;
+	let y2 = Math.cos(Math.PI / 180 * b) * r2;
+	drawLine([cx - x1, cy - y1], [cx - x2, cy - y2], blue);
+    }
+    let r3 = r - 5;
+    let x3 = Math.sin(Math.PI / 180 * bnk) * r3;
+    let y3 = Math.cos(Math.PI / 180 * bnk) * r3;
+    let r4 = r - 10;
+    let x4 = Math.sin(Math.PI / 180 * bnk) * r4;
+    let y4 = Math.cos(Math.PI / 180 * bnk) * r4;
+    drawLine([cx - x3, cy - y3], [cx - x4, cy - y4], white);
+
+    //let y5 = Math.sin(Math.PI / 180 * ptc) * r;
+    let y5 = ptc * 2;
+    let x6 = Math.cos(Math.PI / 180 * bnk) * (w2 - 5);
+    let y6 = Math.sin(Math.PI / 180 * bnk) * (w2 - 5);
+    drawLine([cx - x6, cy + y6 - y5], [cx + x6, cy - y6 - y5], white);
+    drawLine([cx - 1, cy - y5 + 10],  [cx + 1, cy - y5 + 10], white);
+    drawLine([cx - 1, cy - y5 - 10],  [cx + 1, cy - y5 - 10], white);
+    if (ptc < -10) {
+	drawLine([cx - 1, cy - y5 - 50], [cx + 1, cy - y5 - 50], white);
+    } else {
+	drawLine([cx - 2, cy - y5 + 20], [cx + 2, cy - y5 + 20], white);
+    }
+    if (ptc < - 5) {
+	drawLine([cx - 2, cy - y5 - 40], [cx + 2, cy - y5 - 40], white);
+    } else {
+	drawLine([cx - 1, cy - y5 + 30], [cx + 1, cy - y5 + 30], white);
+    }
+    if (ptc > 10) {
+	drawLine([cx - 1, cy - y5 + 50], [cx + 1, cy - y5 + 50], white);
+    } else {
+	drawLine([cx - 2, cy - y5 - 20], [cx + 2, cy - y5 - 20], white);
+    }
+    if (ptc > 5) {
+	drawLine([cx - 2, cy - y5 + 40], [cx + 2, cy - y5 + 40], white);
+    } else {
+	drawLine([cx - 1, cy - y5 - 30], [cx + 1, cy - y5 - 30], white);
+    }
+} // function drawHorizontalIndicator(p)
 
 function drawForce(p) {
     let fx    = p.fx;
@@ -487,9 +558,9 @@ function drawForce(p) {
     drawLine([cx3, yy3], [cx3, cy], yellow); // lift
     drawLine([cx3, yy4], [cx3, cy], yellow); // drag
     drawLine([cx4, yy5], [cx4, cy], yellow); // lift2
-} // function drawForce(p) 
+} // function drawForce(p)
 
-function drawController(p) {
+function drawForce2(p) {
     let cx = 450;
     let cy = 400;
     let w  = 50;
@@ -497,7 +568,49 @@ function drawController(p) {
     let w2 = w / 2;
     let h2 = h / 2;
     let y2 = cy + w2 + 10;
-    let blue = "#3333DD";
+    let blue = "#0000DD";
+
+    drawLine([cx - w2, cy], [cx + w2, cy], blue);
+    drawLine([cx, cy - h2], [cx, cy + h2], blue);
+
+    let sp = Math.sin(Math.PI * p.ptc / 180);
+    let cp = Math.cos(Math.PI * p.ptc / 180);
+    let t_y =   p.thrust * cp;
+    let t_z =  -p.thrust * sp;
+    let d_y =   p.drag * cp;
+    let d_z =   p.drag * sp;
+    let l_y =   p.lift * sp;
+    let l_z =   p.lift * cp;
+    let fy1 =  t_y  + p.lift * sp - p.drag * cp;
+    let fz1 =  t_z  + p.lift * cp + p.drag * sp;
+    
+    let yellow = "#CCCC00";
+    let green  = "#00CC00";
+    let x1 = -t_y / 10000 + cx;
+    let y1 = -t_z / 10000 + cy;
+    let xx2 = -fy1 / 10000 + cx;
+    let yy2 = -fz1 / 10000 + cy;
+    let yy3 = p.weight / 10000 + cy;
+    let xx4 = d_y / 10000 + cx;
+    let yy4 = -d_z / 10000 + cy;
+    let xx5 = -l_y / 10000 + cx;
+    let yy5 = -l_z / 10000 + cy;
+    drawLine([cx, cy], [x1, y1], yellow);
+    drawLine([cx, cy], [xx2, yy2], green);
+    drawLine([cx, cy], [cx, yy3], yellow);
+    drawLine([cx, cy], [xx4, yy4], yellow);
+    drawLine([cx, cy], [xx5, yy5], yellow);
+} // function drawForce2(p)
+
+function drawController(p) {
+    let cx = 320;
+    let cy = 400;
+    let w  = 50;
+    let h = 50;
+    let w2 = w / 2;
+    let h2 = h / 2;
+    let y2 = cy + w2 + 10;
+    let blue = "#0000DD";
 
     drawLine([cx - w2, cy], [cx + w2, cy], blue);
     drawLine([cx, cy - h2], [cx, cy + h2], blue);
@@ -565,7 +678,7 @@ function drawVangle(p) {
 } // function drawVangle(p)
 
 function drawVec(p) { 
-    let vx = p.velx;
+    let vx =  p.velx;
     let vy = -p.velz;
     
     drawLine([320 + vx - 20, 240 + vy], [320 + vx + 20, 240 + vy], "#EE00EE");
@@ -592,8 +705,10 @@ function drawAll() {
     drawVec(plane);
     drawVangle(plane);
     
+    drawHorizontalIndicator(plane);
     drawController(plane);
     drawThrottle(plane);
+    drawForce2(plane);
     drawForce(plane);
     drawCL(plane);
     drawCD(plane);
@@ -656,6 +771,7 @@ document.addEventListener("mousemove", mouseMoveHandler, false);
 
 // keyboard operation handler (down)
 function keyDownHandler(e) {
+    if (e.shiftKey)       keyboard.Shift  = true; // SHIFT
     if (e.keyCode == 38)  keyboard.Up     = true; // (up)
     if (e.keyCode == 40)  keyboard.Down   = true; // (down)
     if (e.keyCode == 37)  keyboard.Left   = true; // <-
@@ -665,6 +781,7 @@ function keyDownHandler(e) {
     if (e.keyCode == 65)  keyboard.A      = true; // A
     if (e.keyCode == 66)  keyboard.B      = true; // B
     if (e.keyCode == 68)  keyboard.D      = true; // D
+    if (e.keyCode == 70)  keyboard.F      = true; // F
     if (e.keyCode == 75)  keyboard.K      = true; // K
     if (e.keyCode == 76)  keyboard.L      = true; // L
     if (e.keyCode == 80)  keyboard.P      = true; // P
@@ -678,6 +795,7 @@ function keyDownHandler(e) {
 
 // keyboard operation handler (up)
 function keyUpHandler(e) {
+    if (e.shiftKey)       keyboard.Shift  = false; // SHIFT
     if (e.keyCode == 38)  keyboard.Up     = false; // (up)
     if (e.keyCode == 40)  keyboard.Down   = false; // (down)
     if (e.keyCode == 37)  keyboard.Left   = false; // <-
@@ -687,6 +805,7 @@ function keyUpHandler(e) {
     if (e.keyCode == 65)  keyboard.A      = false; // A
     if (e.keyCode == 66)  keyboard.B      = false; // B
     if (e.keyCode == 68)  keyboard.D      = false; // D
+    if (e.keyCode == 70)  keyboard.F      = false; // F
     if (e.keyCode == 75)  keyboard.K      = false; // K
     if (e.keyCode == 76)  keyboard.L      = false; // L
     if (e.keyCode == 80)  keyboard.P      = false; // P

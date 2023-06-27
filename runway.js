@@ -71,7 +71,8 @@ function makePoints() {
     points.push([-55, 450, 1, "#FFFFFF", 12]); // PAPI 2
     points.push([-45, 450, 1, "#FFFFFF", 13]); // PAPI 3
 
-    points.push([-390, 1300, 15, "#FFFFFF", 2]); // todai
+    points.push([-390, 1300, 20, "#FFFFFF", 2]); // todai
+    points.push([-390, 1300, 15, "#888888", 1]);
     points.push([-390, 1300, 10, "#888888", 1]);
     points.push([-390, 1300,  5, "#888888", 1]);
 
