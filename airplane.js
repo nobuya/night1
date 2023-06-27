@@ -62,6 +62,7 @@ class Airplane {
 	this.Drag = [ 700, 600, 500, 400 ];
 	this.select = 0;
 	this.ground = false;
+	this.brake  = 0;
     } // constructor(pos)
 
     model() {
@@ -82,11 +83,15 @@ class Airplane {
 	let cf_x = this.mass * v_x * v_y;
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -100 : 50;
 	this.thrust = this.thrust + d_thrust;
-	//this.drag     = v0 * v0 * CD * 700;    // 
-	this.drag     = v0 * v0 * CD * this.Drag[this.select];
+	let drag0 = this.Drag[this.select];
+	drag0 = drag0 * (200 + this.brake) / 200;
+	//this.drag     = v0 * v0 * CD * 700;    //
+	this.drag     = v0 * v0 * CD * drag0;
 
+	let lift0 = this.Lift[this.select];
+	lift0 = lift0 * (200 - this.brake) / 200;
 	//this.lift   = v0 * v0 * CL * 105;  // 
-	this.lift   = v0 * v0 * CL * this.Lift[this.select];  // 
+	this.lift   = v0 * v0 * CL * lift0;
 
 	let cl2 = this.elev * 0.1;
 	this.lift2 = v0 * v0 * cl2 * 20;
@@ -131,6 +136,11 @@ class Airplane {
 	this.velx = Math.floor(vx * 10000) / 10000;
 	this.vely = Math.floor(vy * 10000) / 10000;
 	this.velz = Math.floor(vz * 10000) / 10000;
+
+	if (this.ground) {
+	    if (this.velz < 0) this.velz = 0;
+	    if (this.accz < 0) this.accz = 0;
+	}
 
 	let velo = Math.sqrt(this.velx * this.velx + this.vely * this.vely + this.velz * this.velz);
 	this.velocity = Math.floor(velo * 10000) / 10000;
@@ -246,6 +256,7 @@ class Airplane {
 	ctx.fillText("select: " + this.select, 500, 220);
 	ctx.fillText("Lift: " + this.Lift[this.select], 500, 240);
 	ctx.fillText("Drag: " + this.Drag[this.select], 500, 260);
+	ctx.fillText("brake: " + this.brake, 500, 280);
     } // printDebugInfo()
     
 } // class airplane

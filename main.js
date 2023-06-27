@@ -208,6 +208,11 @@ function controle(p) {
     if (keyboard.Q)     p.thr = (p.thr < 100) ? p.thr + 0.1 : p.thr;
     if (keyboard.A)     p.thr = (p.thr > 0) ?   p.thr - 0.1 : p.thr;
     if (keyboard.F)     p.select = (p.select + 1) % 4;
+    if (keyboard.Shift) {
+	if (keyboard.B)     if (p.brake > 0) p.brake -= 1;
+    } else {
+	if (keyboard.B)     if (p.brake < 40) p.brake += 1;
+    }
     if (keyboard.S) {
 	stop = stop ? false : true;
     }
