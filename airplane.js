@@ -65,15 +65,15 @@ class Airplane {
 	this.Drag = [ 150, 250, 350, 450, 550, 650];
 	this.select = 0;
 	this.select_max = 5;
-	this.ground = false;
-	this.brake  = 0;
+	this.ground = (this.z == 0) ? true : false;
+	this.brake  = 0; // air brake
 	this.brake_max  = 40;
 	this.fcount = 0;
 	this.sideslip_angle = 0;
 	this.dssa = 0;
 	this.idelcount = 0;
-	this.gear_down = 0; // up
-	this.gear_status = 0;
+	this.gear_down = this.ground ? 3 : 0; // up 0 / down 3
+	this.gear_status = this.ground ? 180 : 0; // 
 	this.wbrake = 0; // wheel brake
 	
     } // constructor(pos)
@@ -182,8 +182,14 @@ class Airplane {
 	this.dv = this.velocity - v0;
     
 	let dh = (this.vely > 0) ? Math.atan(this.velx / this.vely) / Math.PI * 180 : 0;
-    
-	this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
+	if (this.ground) {
+	    this.dhdg = dh * 0.25;
+	    this.accx = 0;
+	    this.velx = 0;
+	} else {
+	    this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
+	}
+	
 	this.dbnk = 0.20 * this.aileron * dt;
 
 	let dp = 0.10 * dt * this.elevator;
