@@ -139,16 +139,16 @@ function calcCD(aoa) {
     const stall_a0  = -12;
     const stall_a1  =  20;
     const cd_min    = 0.01;
-    const cd_stall0 = 0.03;
-    const min_a1    = -1;
-    const min_a0    = -4;
-    const cd_20     = 0.12;
-    const cd_10     = 0.03;
+    const cd_stall0 = 0.04;
+    const min_a1    = -0.5;
+    const min_a0    = -2.0;
+    const cd_20     = 0.15;
+    const cd_10     = 0.05;
     const cd_2      = 0.02;
     const cd_m20    = 0.30;
     let cd = 0;
     
-    if (aoa > stall_a1) {
+    if (aoa > stall_a1) { // 20
 	let a = aoa - stall_a1;
 	let cd1 = cd_20 + 0.05 * a;
 	cd = cd1;
