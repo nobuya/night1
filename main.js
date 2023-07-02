@@ -151,8 +151,8 @@ let pos2 = [0, -10000, 500];
 let pos3 = [0, -20000, 1000];
 
 //let plane = new Airplane(pos0, /* vel */0, /* thr */ 10);
-//let plane = new Airplane(pos2, /* vel */80, /* thr */ 50);
-let plane = new Airplane(pos3, /* vel */90, /* thr */ 40);
+let plane = new Airplane(pos2, /* vel */80, /* thr */ 50);
+//let plane = new Airplane(pos3, /* vel */90, /* thr */ 40);
 
 
 function calc(p) {
@@ -206,7 +206,15 @@ function calc(p) {
 
 function controle(p) {
     if (keyboard.Shift) {
-	if (keyboard.B) if (p.brake > 0) p.brake -= 1;
+	if (keyboard.B) {
+	    if (p.brake > 0) {
+		p.brake -= 1;
+	    } 
+	}
+	if (keyboard.V) {
+	    p.brake = 0;
+	    p.auto_brake = true;
+	}
 	if (keyboard.Right2) {
 	    if (p.wbrake > 0) p.wbrake -= 1;
 	}
@@ -239,7 +247,16 @@ function controle(p) {
 //	    p.gear_status = 0;
 //	}
     } else {
-	if (keyboard.B) if (p.brake < 40) p.brake += 1;
+	if (keyboard.B) {
+	    if (p.brake < 40) {
+		p.brake += 1;
+		p.auto_brake = false;
+	    }
+	}
+	if (keyboard.V) {
+	    p.auto_brake = false;
+	    p.brake = 0;
+	}
 	if (keyboard.Right2) {
 	    if (p.wbrake < 100) p.wbrake += 1;
 	}
@@ -955,11 +972,13 @@ function drawController(p) {
 
 function drawSpoiler(p) {
     let x0 = 620
-    let y0 = 340
+    let y0 = 335
     let w = 8
-    let h = 30;
+    let h = 40;
+    let h2 = h - 10;
     let x1 = x0 + w;
     let y1 = y0 + h;
+    let y2 = y0 + 10;
     //let blue = "#0000DD";
     let white = "#DDDDDD";
 
@@ -973,8 +992,11 @@ function drawSpoiler(p) {
     ctx.stroke();
 
     let yellow = "#CCCC00";
-    let y = p.brake / p.brake_max * (h - 4) + y0 + 2;
-    drawLine([x0 + w / 2, y0 + 2], [x0 + w / 2, y], yellow);
+    let y = p.brake / p.brake_max * (h2 - 4) + y2 + 1;
+    if (p.auto_brake) {
+	drawLine([x0 + w / 2, y2], [x0 + w /2, y0 + 2], yellow);
+    } 
+    drawLine([x0 + w / 2, y2 + 1], [x0 + w / 2, y], yellow);
     
 } // function drawSpoiler(p)
 
@@ -1185,8 +1207,9 @@ function keyDownHandler(e) {
     if (e.keyCode == 81)  keyboard.Q      = true; // Q
     if (e.keyCode == 82)  keyboard.R      = true; // R
     if (e.keyCode == 83)  keyboard.S      = true; // S
-    if (e.keyCode == 90)  keyboard.Z      = true; // Z
+    if (e.keyCode == 86)  keyboard.V      = true; // V
     if (e.keyCode == 88)  keyboard.X      = true; // X
+    if (e.keyCode == 90)  keyboard.Z      = true; // Z
 } // function keyDownHandler(e)
 
 // keyboard operation handler (up)
@@ -1209,8 +1232,9 @@ function keyUpHandler(e) {
     if (e.keyCode == 81)  keyboard.Q      = false; // Q
     if (e.keyCode == 82)  keyboard.R      = false; // R
     if (e.keyCode == 83)  keyboard.S      = false; // S
-    if (e.keyCode == 90)  keyboard.Z      = false; // Z
+    if (e.keyCode == 86)  keyboard.V      = false; // V
     if (e.keyCode == 88)  keyboard.X      = false; // X
+    if (e.keyCode == 90)  keyboard.Z      = false; // Z
 } // function keyUpHandler(e)
 
 // mouse move operation handler

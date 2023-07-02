@@ -68,6 +68,7 @@ class Airplane {
 	this.ground = (this.z == 0) ? true : false;
 	this.brake  = 0; // air brake
 	this.brake_max  = 40;
+	this.auto_brake = false;
 	this.fcount = 0;
 	this.sideslip_angle = 0;
 	this.dssa = 0;
@@ -284,6 +285,9 @@ class Airplane {
 	this.y += this.dy;
 	this.z += this.dz;
 	if (this.z <= 4) {
+	    if (this.dz < 0 && this.auto_brake) {
+		this.brake = this.brake_max;
+	    }
 	    this.z = 4;
 	    this.dz = 0;
 	    this.ground = true;
