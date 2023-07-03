@@ -165,7 +165,7 @@ function calc(p) {
     let x = p.x;
     let y = p.y;
     let z = p.z;
-    let hdg = p.hdg + p.sideslip_angle;
+    let hdg = p.hdg + p.yaw;
     let ptc = p.ptc;
     let bnk = p.bnk;
     
@@ -296,8 +296,8 @@ function controle(p) {
     }
     if (keyboard.Left)  if (p.aileron > -25) p.aileron -= 1;
     if (keyboard.Right) if (p.aileron < 25)  p.aileron += 1;
-    if (keyboard.Z)     if (p.rudder > -25)  p.rudder  -= 1;
-    if (keyboard.X)     if (p.rudder < 25)   p.rudder  += 1;
+    if (keyboard.Z)     if (p.rudder > -20)  p.rudder  -= 1;
+    if (keyboard.X)     if (p.rudder < 20)   p.rudder  += 1;
 //    if (keyboard.Up)    ptc = (ptc + 0.1) % 360;
 //    if (keyboard.Down)  ptc = (ptc - 0.1 + 360) % 360;
     if (keyboard.Up)    if (p.elevator < 25)  p.elevator += 1;
@@ -578,14 +578,14 @@ function drawLives() {
 function drawHeading(p) {
     let cx = 320;
     let cy = 420;
-    let heading = Math.ceil(p.hdg);
+    let heading = (Math.ceil(p.hdg + p.yaw) + 360) % 360;
     let white = "#DDDDDD";
     ctx.font = "14px Arial";
     ctx.fillStyle = white;
 
     if (heading == 0) heading = 360;
     ctx.fillText(`${heading}`, cx - 12, cy);
-    
+    //ctx.fillText(`${p.yaw}`, cx - 12, cy + 20);
 } // function drawHeading(p)
 
 function drawSpeed(p) {
@@ -1084,7 +1084,7 @@ function drawVangle(p) {
     let vhangle = p.vhangle;
     let k = 1000;
     let va = vangle;
-    let vh = vhangle;
+    let vh = vhangle - p.yaw;
     let y =  Math.tan(Math.PI * va / 180) * 0.5 * k + cy;
     let x =  Math.tan(Math.PI * vh / 180) * 0.5 * k + cx;
     let r = 5;

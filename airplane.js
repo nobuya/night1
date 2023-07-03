@@ -16,6 +16,7 @@ class Airplane {
 	this.hdg = 0;
 	this.ptc = 0;
 	this.bnk = 0;
+	this.yaw = 0;
 
 	this.dx = 0.0;
 	//this.dy = 4.0;
@@ -97,7 +98,7 @@ class Airplane {
 	//let cf_x = this.mass * v_x * v_y;
 	//let cf_x = 0;
 	//let cf_x = this.mass * v_x * Math.abs(v_x);
-	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.002;
+	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.0025;
 	
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -300 : 200;
 
@@ -190,12 +191,20 @@ class Airplane {
 	} else {
 	    this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
 	}
-	
-	this.dbnk = 0.20 * this.aileron * dt;
+
+	let dbnk = 0.20 * this.aileron * dt;
+	if (this.bnk > 0) dbnk -= 0.02;
+	else if (this.bnk < 0) dbnk += 0.02;
+
+	this.dbnk = dbnk;
 
 	let dp = 0.10 * dt * this.elevator;
-	if (velo < 65) {
-	    if (this.ptc < 0) dp = 0.10 * dt * 3;
+	if (velo < 73) {
+	    if (this.vangle > 0) {
+		dp = dp + 0.10 * dt * (this.vangle - this.ptc) * 1.2;
+	    }
+	} else if (velo < 65) {
+	    if (this.ptc < 0) dp = 0.10 * dt * 3.5;
 	    else dp = 0;
 	}
 	this.dptc = dp;
@@ -208,6 +217,7 @@ class Airplane {
 	let hdg = this.hdg;
 	let bnk = this.bnk;
 	let ptc = this.ptc;
+	let yaw = this.yaw;
     
 	//
 	let sh1 = Math.sin(Math.PI * hdg / 180);
@@ -241,10 +251,17 @@ class Airplane {
 	let vangle2 = vangle1 - this.ptc;
 	this.vangle  = Math.floor(vangle2 * 10000) / 10000;
 
-	this.sideslip_angle = this.rudder * 0.05 - this.dssa;
-	this.dssa = this.sideslip_angle > 0 ? - 0.2 : (this.sideslip_angle < 0 ? 0.2 : 0);
+	if (this.yaw > 0.01) {
+	    this.yaw -= 0.01;
+	} else if (this.yaw < -0.01) {
+	    this.yaw += 0.01;
+	} else {
+	    this.yaw = 0;
+	}
+	    
+	this.yaw = this.rudder * 0.15;
 
-	this.vhangle = (dy1 > 0) ? Math.atan(dx1 / dy1) / Math.PI * 180 - this.sideslip_angle : 0;
+	this.vhangle = (dy1 > 0) ? Math.atan(dx1 / dy1) / Math.PI * 180 : 0;
 	
 
 	this.counter += 1;
