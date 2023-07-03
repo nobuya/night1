@@ -52,6 +52,8 @@ let lives = 0;
 
 let gameCount = 0;
 
+// terrain
+/*
 let points0 = [
     [-3500, 10000, 0, "#00AAAA", 1],
     [-1500, 10000, 0, "#00AAAA", 1],
@@ -137,11 +139,15 @@ let points0 = [
     [ 2000, -9000, 0, "#00AAAA", 1],
 
 ];
+*/
 
 let points = makePoints();
-for (i = 0; i < points0.length; i++) {
-    points.push(points0[i]);
-}
+//for (i = 0; i < points0.length; i++) {
+    //points.push(points0[i]);
+//    points.push(new Light(points0[i][0], points0[i][1], points0[i][2],
+//			  points0[i][3], points0[i][4]));
+//}
+makeTerrainPoints(points);
 
 // screen points
 let s_points = [];
@@ -166,9 +172,12 @@ function calc(p) {
     s_points.splice(0); // clear
     for (let i = 0; i < points.length; i++) {
 	let pt = points[i];
-	let x1 = pt[0] - x;
-	let y1 = pt[1] - y;
-	let z1 = pt[2] - z;
+	//let x1 = pt[0] - x;
+	//let y1 = pt[1] - y;
+	//let z1 = pt[2] - z;
+	let x1 = pt.x - x;
+	let y1 = pt.y - y;
+	let z1 = pt.z - z;
 	// heading
 	let sh = Math.sin(Math.PI * hdg / 180);
 	let ch = Math.cos(Math.PI * hdg / 180);
@@ -196,8 +205,10 @@ function calc(p) {
 	    let k = 1000;
 	    let sx = x4 / y4 * 0.5 * k + cx;
 	    let sy = -z4 / y4 * 0.5 * k + cy;
-	    let style = pt[3];
-	    let type = pt[4];
+	    //let style = pt[3];
+	    //let type = pt[4];
+	    let style = pt.style;
+	    let type = pt.type;
 	    s_points.push([sx, sy, y4, style, type]);
 	}
     }
@@ -473,8 +484,8 @@ function drawPoints(p) {
 		ctx.fill();
 		ctx.closePath();
 	    }
-	} else if (type >= 10) {
-	    let angle = Math.atan(z / (150 - y)) / Math.PI * 180;
+	} else if (type >= 10) { // PAPI
+	    let angle = Math.atan(z / (450 - y)) / Math.PI * 180;
 	    if (type == 10) {
 		ctx.fillStyle = (angle >= 2.5) ? "#EEEEEE" : "#AA1111";
 	    } else if (type == 11) {

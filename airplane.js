@@ -194,7 +194,10 @@ class Airplane {
 	this.dbnk = 0.20 * this.aileron * dt;
 
 	let dp = 0.10 * dt * this.elevator;
-	if (velo < 50) dp = 0;
+	if (velo < 65) {
+	    if (this.ptc < 0) dp = 0.10 * dt * 3;
+	    else dp = 0;
+	}
 	this.dptc = dp;
     } // model()
     
