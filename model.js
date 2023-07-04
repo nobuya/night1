@@ -175,9 +175,12 @@ function calcCD(aoa) {
 } // function calcCD(aoa)
 
 function drawCL(p) {
+    let x0 = 300;
+    let y0 = 100;
     let aoa = p.vangle;
-    drawLine([300 - 75, 100], [300 + 125, 100], "#0000DD");
-    drawLine([300, 150], [300, 30], "#0000DD");
+    const blue = "#0000DD";
+    drawLine([x0 - 75, y0], [x0 + 125, y0], blue);
+    drawLine([x0, y0 + 50], [x0, y0 - 70], blue);
     let i = 0;
     for (let a = -15; a <= 25; a += 0.1) {
 	let cl = calcCL(a);
@@ -189,37 +192,40 @@ function drawCL(p) {
 	ctx.fill();
 	ctx.closePath();
 	if (i % 10 == 0) {
-	    drawLine([x, 100], [x, 103], "#0000DD");
+	    drawLine([x, y0], [x, y0 + 3], blue);
 	}
 	if (i % 50 == 0) {
-	    drawLine([x, 100], [x, 106], "#0000DD");
+	    drawLine([x, y0], [x, y0 + 3], blue);
 	}
 	i++;
     }
     let cl = p.cl;
-    let x = 300 + aoa * 5;
-    let y = 100 - cl * 20;
-    drawLine([x - 10, y], [x + 10, y], "#AAAA00");
-    drawLine([x, y - 10], [x, y + 10], "#AAAA00");
+    let x = x0 + aoa * 5;
+    let y = y0 - cl * 20;
+    const yellow = "#AAAA00";
+    drawLine([x - 10, y], [x + 10, y], yellow);
+    drawLine([x, y - 10], [x, y + 10], yellow);
 } // function drawCL(p)
 
 function drawCD(p) {
+    const x0 = 300;
+    const y0 = 100;
     let aoa = p.vangle;
 //    drawLine([300 - 75, 100], [300 + 125, 100], "#0000DD");
 //    drawLine([300, 150], [300, 30], "#0000DD");
     ctx.fillStyle = "#888888";
     for (let a = -15; a <= 25; a += 0.1) {
 	let cd = calcCD(a);
-	let x = 300 + a * 5;
-	let y = 100 - cd * 200;
+	let x = x0 + a * 5;
+	let y = y0 - cd * 200;
 	ctx.beginPath();
 	ctx.rect(x, y, 2, 2);
 	ctx.fill();
 	ctx.closePath();
     }
     let cd = p.cd;
-    let x = 300 + aoa * 5;
-    let y = 100 - cd * 200;
+    let x = x0 + aoa * 5;
+    let y = y0 - cd * 200;
     drawLine([x - 10, y], [x + 10, y], "#AAAA00");
     drawLine([x, y - 10], [x, y + 10], "#AAAA00"); // yellow
 } // function drawCD(p) 

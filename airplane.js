@@ -48,7 +48,7 @@ class Airplane {
 	this.drag = 0;
 	this.weight = 0;
 	this.lift2 = 0;
-	this.thrust_max  = 10000 * 2 * G;
+	this.thrust_max  = 10890 * 2 * G; // take off thrust (N)
 	this.thrust_idle = this.thrust_max * 0.1;
 	this.thrust = this.thrust_max * this.thr / 100;
 	this.cl = 0;
@@ -185,7 +185,7 @@ class Airplane {
     
 	let dh = (this.vely > 0) ? Math.atan(this.velx / this.vely) / Math.PI * 180 : 0;
 	if (this.ground) {
-	    this.dhdg = dh * 0.25;
+	    this.dhdg = dh * 0.25 + this.rudder * 0.0050;
 	    this.accx = 0;
 	    this.velx = 0;
 	} else {
@@ -193,8 +193,8 @@ class Airplane {
 	}
 
 	let dbnk = 0.20 * this.aileron * dt;
-	if (this.bnk > 0) dbnk -= 0.02;
-	else if (this.bnk < 0) dbnk += 0.02;
+	if (this.bnk > 0 && this.bnk < 3) dbnk -= 0.02;
+	else if (this.bnk < 0 && this.bnk > -3) dbnk += 0.02;
 
 	this.dbnk = dbnk;
 
@@ -258,8 +258,10 @@ class Airplane {
 	} else {
 	    this.yaw = 0;
 	}
-	    
-	this.yaw = this.rudder * 0.15;
+
+	if (!this.ground && this.velocity > 70) {
+	    this.yaw = this.rudder * 0.15;
+	}
 
 	this.vhangle = (dy1 > 0) ? Math.atan(dx1 / dy1) / Math.PI * 180 : 0;
 	

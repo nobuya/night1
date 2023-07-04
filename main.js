@@ -4,7 +4,7 @@
 
 // debug
 const DEBUG = true;
-let debugMode = DEBUG;
+let debugMode = false;
 
 let pauseMode = true;
 let stop = true;
@@ -156,18 +156,22 @@ let pos1 = [0,  -2000, 120];
 let pos2 = [0, -10000, 500];
 let pos3 = [0, -20000, 1000];
 
-//let plane = new Airplane(pos0, /* vel */0, /* thr */ 10);
-let plane = new Airplane(pos2, /* vel */80, /* thr */ 50);
+let plane = new Airplane(pos0, /* vel */0, /* thr */ 10);
+//let plane = new Airplane(pos2, /* vel */80, /* thr */ 50);
 //let plane = new Airplane(pos3, /* vel */90, /* thr */ 40);
 
 
 function calc(p) {
+    const cx = CANVAS_WIDTH / 2;
+    //const cy = CANVAS_HEIGHT / 2;
+    const cy = CANVAS_HEIGHT / 2 - 100;
     let x = p.x;
     let y = p.y;
     let z = p.z;
     let hdg = p.hdg + p.yaw;
     let ptc = p.ptc;
     let bnk = p.bnk;
+	
     
     s_points.splice(0); // clear
     for (let i = 0; i < points.length; i++) {
@@ -197,10 +201,6 @@ function calc(p) {
 	let y4 = y3 * cp - z3 * sp;
 	let z4 = z3 * cp + y3 * sp;
 
-	let cx = CANVAS_WIDTH / 2;
-	//let cy = CANVAS_HEIGHT / 2;
-	let cy = CANVAS_HEIGHT / 2 - 50;
-	
 	if (y4 > 0) {
 	    let k = 1000;
 	    let sx = x4 / y4 * 0.5 * k + cx;
@@ -530,9 +530,9 @@ function drawLine(begin, end) {
 */
 
 function drawLines() {
-    let cx = 320;
-    //let cy = 240;
-    let cy = 240 - 50; // 190
+    const cx = 320;
+    //const cy = 240;
+    const cy = 240 - 100; // 140
     let w0 = 70;
     let w1 = 30;
     let h0 = 60;
@@ -545,21 +545,6 @@ function drawLines() {
     drawLine([cx, cy - h0], [cx, cy - h1], blue);
     drawLine([cx, cy + h1], [cx, cy + h0], blue);
 } // function drawLines()
-
-/*
-function drawOne() {
-    ctx.fillStyle = "#888888";
-    ctx.beginPath();
-    ctx.moveTo(100, 100);
-    ctx.lineTo(200, 100);
-    ctx.lineTo(200, 200);
-    ctx.lineTo(100, 200);
-    ctx.lineTo(100, 100);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-}
-*/
 
 // draw score
 function drawScore() {
@@ -579,13 +564,16 @@ function drawHeading(p) {
     let cx = 320;
     let cy = 420;
     let heading = (Math.ceil(p.hdg + p.yaw) + 360) % 360;
+    let rate  = Math.ceil(p.dhdg * 60 * 60);
     let white = "#DDDDDD";
+    
     ctx.font = "14px Arial";
     ctx.fillStyle = white;
 
     if (heading == 0) heading = 360;
     ctx.fillText(`${heading}`, cx - 12, cy);
     //ctx.fillText(`${p.yaw}`, cx - 12, cy + 20);
+    ctx.fillText(`${rate}`, cx - 12, cy + 40);
 } // function drawHeading(p)
 
 function drawSpeed(p) {
@@ -1077,9 +1065,9 @@ function drawThrottle(p) {
 } // function drawThrottle(p)
 
 function drawVangle(p) {
-    let cx = CANVAS_WIDTH / 2;
-    //let cy = CANVAS_HEIGHT / 2;
-    let cy = CANVAS_HEIGHT / 2 - 50;
+    const cx = CANVAS_WIDTH / 2;
+    //const cy = CANVAS_HEIGHT / 2;
+    const cy = CANVAS_HEIGHT / 2 - 100;
     let vangle  = p.vangle;
     let vhangle = p.vhangle;
     let k = 1000;
@@ -1135,8 +1123,8 @@ function drawAll() {
     drawThrottle(plane);
     drawForce2(plane);
     drawForce(plane);
-    drawCL(plane);
-    drawCD(plane);
+    drawCL(plane); // model.js
+    drawCD(plane); // model.js
 
     drawSpeed(plane);
     drawAltitude(plane);
