@@ -2,6 +2,40 @@
 //  (model.js)
 //
 
+function calcTemperature(h) {
+    const r0 = 6356766; // (m)
+    let H = (r0 * h)/(r0 + h); // (m)
+
+    if (H <= 11000) {
+	return (15 - 6.5 * H / 1000);
+    } else {
+	return -56.5;
+    }
+} // function calcTemperature(h)
+
+function calcAirDensity(h) {
+    const r0 = 6356766; // (m)
+    let H = (r0 * h)/(r0 + h); // (m)
+    let T = 0; // 
+    let P = 0; // (Pa)
+
+    if (H <= 11000) {
+	T = (15 - 6.5 * H / 1000);
+	P = 101325 * Math.pow((288.15/(T+273.15)), -5.256);
+    } else {
+	T =  -56.5;
+	P = (22632.064 * Math.exp(-0.1577*(H / 1000 - 11)));
+    }
+
+    let roh = 0.0034837 * P / (T + 273.15);
+
+    return roh;
+}
+
+function calcSoundSpeed(t) {
+    return 20.04686 * Math.sqrt(t + 273.15);
+} // function calcSoundSpeed(t)
+
 /*
 
     aoa  
