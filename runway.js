@@ -62,6 +62,17 @@ function makePoints() {
 	}
     }
 
+    // touch down zone light
+    for (let y = 30; y <= 900; y += 30) {
+        let color = white;
+        for (let x = 12; x <= 18; x += 3) {
+            let pt1 = new Light( x, y, 0, color, 1); // white
+            let pt2 = new Light(-x, y, 0, color, 1); // white
+            points.push(pt1);
+            points.push(pt2);
+	}
+    }
+
     // approaching light
     for (let y = -30; y >= -450; y-= 30) {
 	for (let x = -2.25; x <= 2.25; x += 1.5) {

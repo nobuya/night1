@@ -8,6 +8,7 @@ let debugMode = false;
 
 let pauseMode = true;
 let landingMode = false;
+let landingModePosition = 0;
 let takeoffMode = true;
 let stop = true;
 
@@ -392,15 +393,46 @@ function controlePauseMode(p) {
 	    pauseMode = false;
 	    stop = false;
 	    landingMode = false;
+	    lnadingModePosition = 0;
 	}
     }
     if (keyboard.L) { // landing mode
 	if (drawCount % 30 == 0) {
+	    if (landingMode == true) {
+		if (landingModePosition == 4) {
+		    landingModePosition = 0;
+		} else {
+		    landingModePosition += 1;
+		}
+	    }
 	    landingMode = true;
 	    takeoffMode = false;
-	    p.x = 0;
-	    p.y = -6000;
-	    p.z = 300;
+	    if (landingModePosition == 0) {
+		p.x = 0;
+		p.y = -6000;
+		p.z = 300;
+	    } else if (landingModePosition == 1) {
+		p.x = 0;
+		p.y = -3000;
+		p.z = 200;
+	    } else if (landingModePosition == 2) {
+		p.x = 0;
+		p.y = -2000;
+		p.z = 150;
+	    } else if (landingModePosition == 3) {
+		p.x = 0;
+		p.y = -1000;
+		p.z = 100;
+	    } else if (landingModePosition == 4) {
+		p.x = 0;
+		p.y = -500;
+		p.z = 50;
+	    } else {
+		p.x = 0;
+		p.y = -6000;
+		p.z = 300;
+	    }
+		
 	    p.dx = 0;
 	    p.dy = 0;
 	    p.dz = 0;
