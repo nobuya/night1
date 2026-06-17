@@ -10,9 +10,48 @@
   </head>
   <body>
     <canvas id="can"></canvas>
+    <script src="light.js"></script>
+    <script src="terrain.js"></script>
     <script src="model.js"></script>
     <script src="airplane.js"></script>
     <script src="runway.js"></script>
+    <script src="draw.js"></script>
     <script src="main.js"></script>
   </body>
+  <p>
+    [<a href="https://github.com/nobuya/night1">Github repository</a>]
+  </p>
+  <h2> Key control </h2>
+  <h3>(Mode)</h3>
+  <p>
+    <ul>
+      <li> S ... stop on/off </li>
+      <li> P ... pause mode </li>
+      <li> D ... debug mode </li>
+    </ul>
+  </p>
+  <h3>(Airplane Control)</h3>
+  <p>
+    <table boader=1>
+      <tr> <th>Key</th>  <th>Description</th> </tr>
+      <tr> <td>SHIFT + B</td>  <td>reduce brake </td> </tr>
+      <tr> <td>SHIFT + V</td>  <td>auto brake on</td> </tr>
+      <tr> <td>SHIFT + &gt;</td>  <td>wheel brake</td> </tr>
+      <tr> <td>SHIFT + F</td>  <td> flap up</td> </tr>
+      <tr> <td>SHIFT + A</td>  <td>tdrottle idle</td> </tr>
+      <tr> <td>SHIFT + Q</td>  <td>tdrottle 0</td> </tr>
+
+      <tr> <td> B </td>  <td>apply brake </td> </tr>
+      <tr> <td> V </td>  <td>auto brake off</td> </tr>
+      <tr> <td> &gt;</td>  <td>apply wheel brake </td> </tr>
+      <tr> <td> F </td>  <td> flap down</td> </tr>
+      <tr> <td> Q </td>  <td> throttle ++ </td> </tr>
+      <tr> <td> A </td>  <td> throttle -- </td> </tr>
+      <tr> <td> </td>    <td> </td> </tr>
+      <tr> <td> Z </td>  <td> rudder left </td> </tr>
+      <tr> <td> X </td>  <td> rudder right </td> </tr>
+      <tr> <td> L </td>    <td> landing mode (only available in pause mode)</td> </tr>
+
+    </table>
+  </p>
 </html>

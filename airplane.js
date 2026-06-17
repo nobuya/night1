@@ -16,6 +16,7 @@ class Airplane {
 	this.hdg = 0;
 	this.ptc = 0;
 	this.bnk = 0;
+	this.yaw = 0;
 
 	this.dx = 0.0;
 	//this.dy = 4.0;
@@ -23,9 +24,11 @@ class Airplane {
 	this.dz = -0.12;
 	this.dz = 0.0;
 	this.velocity = vel; // (m/sec)
+	this.temp = calcTemperature(this.z);
+	this.mach = vel / calcSoundSpeed(this.temp);
 	//this.thr = 60; // throttle
 	this.thr = thr; // throttle
-	this.mass = 50000;
+	this.mass = 55000; // 55 t
 	this.fx = 0;
 	this.fy = 0;
 	this.fz = 0;
@@ -47,7 +50,7 @@ class Airplane {
 	this.drag = 0;
 	this.weight = 0;
 	this.lift2 = 0;
-	this.thrust_max  = 10000 * 2 * G;
+	this.thrust_max  = 10890 * 2 * G; // take off thrust (N)
 	this.thrust_idle = this.thrust_max * 0.1;
 	this.thrust = this.thrust_max * this.thr / 100;
 	this.cl = 0;
@@ -62,12 +65,13 @@ class Airplane {
 	this.counter  = 0;
 	
 	this.Lift = [ 65,   80,  90, 105, 120, 135];
-	this.Drag = [ 150, 250, 350, 450, 550, 650];
+	this.Drag = [ 130, 200, 300, 350, 400, 450];
 	this.select = 0;
 	this.select_max = 5;
 	this.ground = (this.z == 0) ? true : false;
 	this.brake  = 0; // air brake
 	this.brake_max  = 40;
+	this.auto_brake = false;
 	this.fcount = 0;
 	this.sideslip_angle = 0;
 	this.dssa = 0;
@@ -87,6 +91,8 @@ class Airplane {
 	let CL = calcCL(this.vangle);
 	let CD = calcCD(this.vangle);
 	let Cm = calcCm(this.vangle);
+	let roh = calcAirDensity(this.z); // model.js
+	this.temp = calcTemperature(this.z);
 
 	this.cl = CL
 	this.cd = CD
@@ -96,7 +102,7 @@ class Airplane {
 	//let cf_x = this.mass * v_x * v_y;
 	//let cf_x = 0;
 	//let cf_x = this.mass * v_x * Math.abs(v_x);
-	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.002;
+	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.0025;
 	
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -300 : 200;
 
@@ -107,21 +113,22 @@ class Airplane {
 	}
 
 	let drag0 = this.Drag[this.select];
+	// this.gear_status: up --> 0 / down --> 180
 	drag0 = drag0 * (200 + this.brake) / 200 + this.gear_status * 0.2;
 	//this.drag     = v0 * v0 * CD * 700;    //
-	let drag1 = v0 * v0 * CD * drag0;
+	let drag1 = v0 * v0 * CD * drag0 * roh;
 	
 	this.drag = drag1;
 
 	let lift0 = this.Lift[this.select];
 	lift0 = lift0 * (200 - this.brake) / 200;
 	//this.lift   = v0 * v0 * CL * 105;  // 
-	this.lift   = v0 * v0 * CL * lift0;
+	this.lift   = v0 * v0 * CL * lift0 * roh;
 
 	let cl2 = this.elev * 0.1;
-	this.lift2 = v0 * v0 * cl2 * 20;
+	this.lift2 = v0 * v0 * cl2 * 20 * roh;
 
-	this.ptc_mo = v0 * v0 * Cm * 2;
+	this.ptc_mo = v0 * v0 * Cm * 2 * roh;
     
 	let gravity = this.mass * G;       // mass = 10,000 ==> 98,000
 	this.weight = gravity;
@@ -144,10 +151,18 @@ class Airplane {
 
 	if (this.ground) {
 	    if (this.gear_down == 3 && this.wbrake > 0) {
-		fy2 = fy2 - v0 * this.wbrake * 30.0;
+		let k = (v0 > 40) ? v0 : ((v0 > 0.05) ? 40 : 0);
+		let fy22 = k * this.wbrake * 15.0;
+		if (v_y > 0) {
+		    fy2 = fy2 - fy22;
+		} else {
+		    fy2 = fy2 - fy22;
+		}
 	    }
-	    if (Math.abs(fy2) > this.mass * 0.01) {
+	    if (fy2 > this.mass * 0.01) {
 		fy2 = fy2 - this.mass * 0.01;
+	    } else if (fy2 < -this.mass * 0.01) {
+		fy2 = fy2 + this.mass * 0.01;
 	    }
 	    //if (fy2 < 0) fy2 = 0;
 	}
@@ -168,32 +183,45 @@ class Airplane {
 	let vy = this.vely + this.accy * dt;
 	let vz = this.velz + this.accz * dt;
 	
-	this.velx = Math.floor(vx * 10000) / 10000;
-	this.vely = Math.floor(vy * 10000) / 10000;
-	this.velz = Math.floor(vz * 10000) / 10000;
+	this.velx = Math.floor(vx * 1000) / 1000;
+	this.vely = Math.floor(vy * 1000) / 1000;
+	this.velz = Math.floor(vz * 1000) / 1000;
 
 	if (this.ground) {
+	    if (this.vely < 0.01) this.vely = 0;
 	    if (this.velz < 0) this.velz = 0;
 	    if (this.accz < 0) this.accz = 0;
 	}
 
 	let velo = Math.sqrt(this.velx * this.velx + this.vely * this.vely + this.velz * this.velz);
 	this.velocity = Math.floor(velo * 10000) / 10000;
+	this.mach = this.velocity / calcSoundSpeed(this.temp);
 	this.dv = this.velocity - v0;
     
 	let dh = (this.vely > 0) ? Math.atan(this.velx / this.vely) / Math.PI * 180 : 0;
 	if (this.ground) {
-	    this.dhdg = dh * 0.25;
+	    this.dhdg = dh * 0.25 + this.rudder * 0.0050;
 	    this.accx = 0;
 	    this.velx = 0;
 	} else {
 	    this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
 	}
-	
-	this.dbnk = 0.20 * this.aileron * dt;
+
+	let dbnk = 0.20 * this.aileron * dt;
+	if (this.bnk > 0 && this.bnk < 3) dbnk -= 0.02;
+	else if (this.bnk < 0 && this.bnk > -3) dbnk += 0.02;
+
+	this.dbnk = dbnk;
 
 	let dp = 0.10 * dt * this.elevator;
-	if (velo < 50) dp = 0;
+	if (velo < 73) {
+	    if (this.vangle > 0) {
+		dp = dp + 0.10 * dt * (this.vangle - this.ptc) * 1.2;
+	    }
+	} else if (velo < 65) {
+	    if (this.ptc < 0) dp = 0.10 * dt * 3.5;
+	    else dp = 0;
+	}
 	this.dptc = dp;
     } // model()
     
@@ -204,6 +232,7 @@ class Airplane {
 	let hdg = this.hdg;
 	let bnk = this.bnk;
 	let ptc = this.ptc;
+	let yaw = this.yaw;
     
 	//
 	let sh1 = Math.sin(Math.PI * hdg / 180);
@@ -237,10 +266,19 @@ class Airplane {
 	let vangle2 = vangle1 - this.ptc;
 	this.vangle  = Math.floor(vangle2 * 10000) / 10000;
 
-	this.sideslip_angle = this.rudder * 0.05 - this.dssa;
-	this.dssa = this.sideslip_angle > 0 ? - 0.2 : (this.sideslip_angle < 0 ? 0.2 : 0);
+	if (this.yaw > 0.01) {
+	    this.yaw -= 0.01;
+	} else if (this.yaw < -0.01) {
+	    this.yaw += 0.01;
+	} else {
+	    this.yaw = 0;
+	}
 
-	this.vhangle = (dy1 > 0) ? Math.atan(dx1 / dy1) / Math.PI * 180 - this.sideslip_angle : 0;
+	if (!this.ground && this.velocity > 70) {
+	    this.yaw = this.rudder * 0.15;
+	}
+
+	this.vhangle = (dy1 > 0) ? Math.atan(dx1 / dy1) / Math.PI * 180 : 0;
 	
 
 	this.counter += 1;
@@ -284,6 +322,9 @@ class Airplane {
 	this.y += this.dy;
 	this.z += this.dz;
 	if (this.z <= 4) {
+	    if (this.dz < 0 && this.auto_brake) {
+		this.brake = this.brake_max;
+	    }
 	    this.z = 4;
 	    this.dz = 0;
 	    this.ground = true;
