@@ -9,7 +9,18 @@
     </style>
   </head>
   <body>
+    <audio id="call2500" src="sounds/v_2500.mp3" preload="auto"></audio>
+    <audio id="call1000" src="sounds/v_1000.mp3" preload="auto"></audio>
+    <audio id="call500" src="sounds/v_500.mp3" preload="auto"></audio>
+    <audio id="call100" src="sounds/v_100.mp3" preload="auto"></audio>
+    <audio id="call50"  src="sounds/v_50.mp3" preload="auto"></audio>
+    <audio id="call40"  src="sounds/v_40.mp3" preload="auto"></audio>
+    <audio id="call30"  src="sounds/v_30.mp3" preload="auto"></audio>
+    <audio id="call20"  src="sounds/v_20.mp3" preload="auto"></audio>
+    <audio id="call10"  src="sounds/v_10.mp3" preload="auto"></audio>
     <canvas id="can"></canvas>
+    <script src="engine_sound.js"></script>
+<!--	<script src="sound.js"></script> -->
     <script src="light.js"></script>
     <script src="terrain.js"></script>
     <script src="model.js"></script>
@@ -52,6 +63,9 @@
       <tr> <td> Z </td>  <td> rudder left </td> </tr>
       <tr> <td> X </td>  <td> rudder right </td> </tr>
       <tr> <td> L </td>    <td> landing mode (only available in pause mode)</td> </tr>
+      <tr> <td> W </td>  <td> view left</td> </tr>
+      <tr> <td> E </td>  <td> view front</td> </tr>
+      <tr> <td> R </td>  <td> view right</td> </tr>
 
     </table>
   </p>

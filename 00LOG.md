@@ -1,6 +1,12 @@
 Log
 ---
 
+### 2026-06-18
+
+- add a feature to play jet engine sounds
+- add a feature to automatically call altitude
+
+
 ### 2026-06-17
 
 - add a feature to select the starting position in landing mode

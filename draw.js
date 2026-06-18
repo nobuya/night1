@@ -19,6 +19,92 @@ function drawLines() {
     drawLine([cx, cy + h1], [cx, cy + h0], blue);
 } // function drawLines()
 
+function drawHeadingIndicator(p) {
+    let cx = 70;
+    let cy = 320;
+    let blue = "#0000DD";
+    let red = "#DD0000";
+    let white = "#DDDDDD";
+    let cyan = "#00DDDD";
+    let yellow = "#DDDD00";
+    let h0 = 20;
+    let w0 = 30
+    let w1 = 10
+    let r0 = 30;
+    let r1 = 20;
+    let r2 = 10;
+
+    let heading = (Math.ceil(p.hdg + p.yaw) + 360) % 360;
+    if (heading == 0) heading = 360;
+
+    let x0 = Math.sin(Math.PI / 180 * heading) * r0;
+    let y0 = Math.cos(Math.PI / 180 * heading) * r0;
+    let x1 = Math.sin(Math.PI / 180 * (heading + 90)) * r1;
+    let y1 = Math.cos(Math.PI / 180 * (heading + 90)) * r1;
+    let x2 = Math.sin(Math.PI / 180 * (heading + 90)) * r2;
+    let y2 = Math.cos(Math.PI / 180 * (heading + 90)) * r2;
+
+    drawLine([cx - x0, cy - y0], [cx + x0, cy + y0], white);
+    drawLine([cx + x1, cy + y1], [cx + x2, cy + y2], white);
+    drawLine([cx - x1, cy - y1], [cx - x2, cy - y2], white);
+
+    drawLine([cx, cy - h0], [cx, cy + h0], blue);
+    drawLine([cx - w0, cy + 1], [cx + w0, cy + 1], blue);
+    drawLine([cx - w1, cy + h0], [cx + w1, cy + h0], blue);
+
+    let rr0 = 40;
+    let rr1 = 38;
+    for (let h = 0; h < 360; h += 10) {
+	let h2 = heading + h;
+	let rr2;
+	if (h % 90 == 0) {
+	    rr2 = rr1 - 6;
+	} else if (h % 30 == 0) {
+	    rr2 = rr1 - 3;
+	} else {
+	    rr2 = rr1;
+	}
+	let color;
+	if (h == 0) {
+	    color = red;
+	} else if (h == 180) {
+	    color = cyan;
+	} else {
+	    color = white;
+	}
+	let x0 = Math.sin(Math.PI / 180 * h2) * rr0;
+	let y0 = Math.cos(Math.PI / 180 * h2) * rr0;
+	let x1 = Math.sin(Math.PI / 180 * h2) * rr2;
+	let y1 = Math.cos(Math.PI / 180 * h2) * rr2;
+	drawLine([cx - x0, cy - y0], [cx - x1, cy - y1], color);
+    }
+
+    let va = p.view_h_angle;
+    let r5 = r0;
+    let r6 = r0 - 10;
+    let x5 = Math.sin(Math.PI / 180 * va) * r5;
+    let y5 = Math.cos(Math.PI / 180 * va) * r5;
+    let x6 = Math.sin(Math.PI / 180 * va) * r6;
+    let y6 = Math.cos(Math.PI / 180 * va) * r6;
+    drawLine([cx + x5, cy - y5], [cx + x6, cy - y6], yellow);
+
+    // target
+    let tx = 0;
+    let ty = 0;
+    let dx = tx - p.x;
+    let dy = ty - p.y;
+    let angle = Math.atan2(dx, dy);
+    let dir = angle - Math.PI / 180 * heading;
+    let r7 = rr0 + 1;
+    let r8 = r7 + 4;
+    let x7 = Math.sin(dir) * r7;
+    let y7 = Math.cos(dir) * r7;
+    let x8 = Math.sin(dir) * r8;
+    let y8 = Math.cos(dir) * r8;
+    drawLine([cx + x7, cy - y7], [cx + x8, cy - y8], yellow);
+    
+} // function drawHeadingIndicator(p)
+
 function drawHeading(p) {
     let cx = 320;
     let cy = 420;
@@ -545,15 +631,20 @@ function drawVangle(p) {
     let vhangle = p.vhangle;
     let k = 1000;
     let va = vangle;
-    let vh = vhangle - p.yaw;
+    //let vh = vhangle - p.yaw;
+    let vh = vhangle - p.yaw - p.view_h_angle;
     let y =  Math.tan(Math.PI * va / 180) * 0.5 * k + cy;
     let x =  Math.tan(Math.PI * vh / 180) * 0.5 * k + cx;
     let r = 5;
-    ctx.beginPath();
-    ctx.strokeStyle = "#EE00EE";
-    ctx.lineWidth = 1;
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.stroke();
+    if (p.view_h_angle > 90 || p.view_h_angle < -90) {
+	// do not draw
+    } else {
+	ctx.beginPath();
+	ctx.strokeStyle = "#EE00EE";
+	ctx.lineWidth = 1;
+	ctx.arc(x, y, r, 0, Math.PI * 2);
+	ctx.stroke();
+    }
 } // function drawVangle(p)
 
 function drawVec(p) {
@@ -588,6 +679,7 @@ function drawInstruments(p) {
     drawSpeed(plane);
     drawAltitude(plane);
     drawHeading(plane);
+    drawHeadingIndicator(plane);
     
 } // function drawInstruments(p)
 

@@ -18,6 +18,8 @@ class Airplane {
 	this.bnk = 0;
 	this.yaw = 0;
 
+	this.view_h_angle = 0;
+
 	this.dx = 0.0;
 	//this.dy = 4.0;
 	this.dy = 0.0;

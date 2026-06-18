@@ -37,6 +37,9 @@ const CANVAS_HEIGHT = SCREEN_HEIGHT;
 const canvas = document.getElementById("can");
 const ctx = canvas.getContext("2d");  // context
 
+const audio_ctx = new AudioContext(); // audio context
+const engine = new EngineSound(audio_ctx);
+
 // set canvas size
 canvas.width  = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
@@ -165,6 +168,8 @@ let plane = new Airplane(pos0, /* vel */0, /* thr */ 10);
 //let plane = new Airplane(pos3, /* vel */90, /* thr */ 40);
 //let plane = new Airplane(pos4, /* vel */100, /* thr */ 40);
 
+//let view_angle = 0;
+
 
 function calc(p) {
     const cx = CANVAS_WIDTH / 2;
@@ -174,6 +179,7 @@ function calc(p) {
     let y = p.y;
     let z = p.z;
     let hdg = p.hdg + p.yaw;
+    let v_hdg = hdg + p.view_h_angle;
     let ptc = p.ptc;
     let bnk = p.bnk;
 	
@@ -188,8 +194,10 @@ function calc(p) {
 	let y1 = pt.y - y;
 	let z1 = pt.z - z;
 	// heading
-	let sh = Math.sin(Math.PI * hdg / 180);
-	let ch = Math.cos(Math.PI * hdg / 180);
+	//let sh = Math.sin(Math.PI * hdg / 180);
+	let sh = Math.sin(Math.PI * v_hdg / 180);
+	//let ch = Math.cos(Math.PI * hdg / 180);
+	let ch = Math.cos(Math.PI * v_hdg / 180);
 	let x2 = x1 * ch - y1 * sh;
 	let y2 = y1 * ch + x1 * sh;
 	let z2 = z1;
@@ -222,12 +230,12 @@ function calc(p) {
 
 function controle(p) {
     if (keyboard.Shift) {
-	if (keyboard.B) {
+	if (keyboard.B) { // reduce brake
 	    if (p.brake > 0) {
 		p.brake -= 1;
 	    } 
 	}
-	if (keyboard.V) {
+	if (keyboard.V) { // auto brake on
 	    p.brake = 0;
 	    p.auto_brake = true;
 	}
@@ -238,7 +246,7 @@ function controle(p) {
 	    p.select -= 1;
 	    p.fcount = 0;
 	}
-	if (keyboard.A) {
+	if (keyboard.A) { // throttle idle
 	    if (p.thr > 10) {
 		p.thr = 10;
 		p.idelcount = 0;
@@ -253,7 +261,7 @@ function controle(p) {
 		p.idelcount = 0;
 	    }
 	}
-	if (keyboard.Q) {
+	if (keyboard.Q) { // throttle 0
 	    if (p.thr < 0) {
 		p.thr = 0;
 	    }
@@ -262,8 +270,23 @@ function controle(p) {
 //	    p.gear_down = 1;
 //	    p.gear_status = 0;
 //	}
-    } else {
-	if (keyboard.B) {
+    } else { // !keyword.Shift
+	if (keyboard.W) {
+	    p.view_h_angle -= 1;
+	    if (p.view_h_angle < -180) {
+		p.view_h_angle += 360;
+	    }
+	}
+	if (keyboard.E) {
+	    p.view_h_angle = 0;
+	}
+	if (keyboard.R) {
+	    p.view_h_angle += 1;
+	    if (p.view_h_angle > 180) {
+		p.view_h_angle -= 360;
+	    }
+	}
+	if (keyboard.B) { // apply brake
 	    if (p.brake < 40) {
 		p.brake += 1;
 		p.auto_brake = false;
@@ -399,7 +422,7 @@ function controlePauseMode(p) {
     if (keyboard.L) { // landing mode
 	if (drawCount % 30 == 0) {
 	    if (landingMode == true) {
-		if (landingModePosition == 4) {
+		if (landingModePosition == 5) {
 		    landingModePosition = 0;
 		} else {
 		    landingModePosition += 1;
@@ -417,16 +440,20 @@ function controlePauseMode(p) {
 		p.z = 200;
 	    } else if (landingModePosition == 2) {
 		p.x = 0;
-		p.y = -2000;
-		p.z = 150;
+		p.y = -1500;
+		p.z = 110;
 	    } else if (landingModePosition == 3) {
 		p.x = 0;
 		p.y = -1000;
-		p.z = 100;
+		p.z = 80;
 	    } else if (landingModePosition == 4) {
 		p.x = 0;
 		p.y = -500;
 		p.z = 50;
+	    } else if (landingModePosition == 5) {
+		p.x = 0;
+		p.y = -15000;
+		p.z = 1000;
 	    } else {
 		p.x = 0;
 		p.y = -6000;
@@ -488,11 +515,43 @@ function move() {
 //    }
 } // function move()
 
+//let called500 = false;
+let prevAltitude = 0;
+
+
 function updateAll() {
     controle(plane);
     //attitude();
     //model();
     plane.update1();
+
+    //let alt = plane.z / 0.3048;
+    //let alt = Math.ceil(plane.z * 3.28084); // feet
+    let alt = plane.z * 3.28084; // in feet
+    let call = null;
+    if (prevAltitude > 2500 && alt < 2500) {
+	call = "call2500";
+    } else if (prevAltitude > 1000 && alt < 1000) {
+	call = "call1000";
+    } else if (prevAltitude > 500 && alt < 500) {
+	call = "call500";
+    } else if (prevAltitude > 100 && alt < 100) {
+	call = "call100";
+    } else if (prevAltitude > 50 && alt < 50) {
+	call = "call50";
+    } else if (prevAltitude > 40 && alt < 40) {
+	call = "call40";
+    } else if (prevAltitude > 30 && alt < 30) {
+	call = "call30";
+    } else if (prevAltitude > 20 && alt < 20) {
+	call = "call20";
+    } else if (prevAltitude > 10 && alt < 10) {
+	call = "call10";
+    }
+    if (call != null) {
+	document.getElementById(call).play();
+    }
+    prevAltitude = alt;
 
     if (!stop) {
 	//move();
@@ -653,6 +712,8 @@ function printInfo() {
     ctx.font = "16px Impact";
     ctx.fillStyle = "#eeeeee";
     ctx.fillText("roh: " + roh, 10, 20);
+    ctx.fillText("FPS: " + fps, 550, 460);
+    ctx.fillText("points: " + points.length, 550, 475);
     
     if (pauseMode) {
 	ctx.font = "16px Arial";
@@ -673,11 +734,18 @@ function printDebugInfo() {
     plane.printDebugInfo();
 } // function printDebugInfo()
 
+//let lastTime = performance.now();
+
 function gameLoop() {
     gameCount++;
     updateAll();
     drawAll();
     printInfo();
+    if (engine) {
+	engine.setThrottle(plane.thr / 100.0);
+	engine.update();
+	console.log(engine.ctx.state);
+    }
     if (pauseMode) {
 	requestAnimationFrame(gameLoopPauseMode);
     } else {
@@ -685,11 +753,16 @@ function gameLoop() {
     }
 } // function gameLoop()
 
+
 function gameLoopPauseMode() {
     gameCount++;
     updateAllPauseMode();
     drawAll();
     printInfo();
+    if (engine) {
+	engine.setThrottle(plane.thr / 100.0);
+	engine.update();
+    }
     if (pauseMode) {
 	requestAnimationFrame(gameLoopPauseMode);
     } else {
@@ -715,6 +788,7 @@ function keyDownHandler(e) {
     if (e.keyCode == 65)  keyboard.A      = true; // A
     if (e.keyCode == 66)  keyboard.B      = true; // B
     if (e.keyCode == 68)  keyboard.D      = true; // D
+    if (e.keyCode == 69)  keyboard.E      = true; // E
     if (e.keyCode == 70)  keyboard.F      = true; // F
     if (e.keyCode == 71)  keyboard.G      = true; // G
     if (e.keyCode == 74)  keyboard.J      = true; // J
@@ -726,6 +800,7 @@ function keyDownHandler(e) {
     if (e.keyCode == 83)  keyboard.S      = true; // S
     if (e.keyCode == 84)  keyboard.T      = true; // T
     if (e.keyCode == 86)  keyboard.V      = true; // V
+    if (e.keyCode == 87)  keyboard.W      = true; // W
     if (e.keyCode == 88)  keyboard.X      = true; // X
     if (e.keyCode == 90)  keyboard.Z      = true; // Z
 } // function keyDownHandler(e)
@@ -742,6 +817,7 @@ function keyUpHandler(e) {
     if (e.keyCode == 65)  keyboard.A      = false; // A
     if (e.keyCode == 66)  keyboard.B      = false; // B
     if (e.keyCode == 68)  keyboard.D      = false; // D
+    if (e.keyCode == 69)  keyboard.E      = false; // E
     if (e.keyCode == 70)  keyboard.F      = false; // F
     if (e.keyCode == 71)  keyboard.G      = false; // G
     if (e.keyCode == 74)  keyboard.J      = false; // J
@@ -753,6 +829,7 @@ function keyUpHandler(e) {
     if (e.keyCode == 83)  keyboard.S      = false; // S
     if (e.keyCode == 84)  keyboard.T      = false; // T
     if (e.keyCode == 86)  keyboard.V      = false; // V
+    if (e.keyCode == 87)  keyboard.W      = false; // W
     if (e.keyCode == 88)  keyboard.X      = false; // X
     if (e.keyCode == 90)  keyboard.Z      = false; // Z
 } // function keyUpHandler(e)
@@ -777,6 +854,7 @@ function initializeGame() {
 // game start when onload
 window.onload = function() {
     initializeGame();
+//    engine.setThrottle(p.thr / 10);
     //gameLoop();
     if (pauseMode) {
 	gameLoopPauseMode();
