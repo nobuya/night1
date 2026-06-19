@@ -2,6 +2,15 @@
 // (light.js)
 //
 
+/*
+ type
+    2  Todai
+   10  PAPI 0
+   11  PAPI 1
+   12  PAPI 2
+   13  PAPI 3
+*/
+
 class Light {
     constructor(x, y, z, style, type) {
 	this.x = x;

@@ -125,6 +125,7 @@ function drawSpeed(p) {
     let v0 = p.velocity;
     let speed = Math.ceil(v0 * 3600 / 1852); // knot
     let white = "#DDDDDD";
+    let cyan  = "#00DDDD";
     ctx.font = "16px Arial";
     ctx.fillStyle = white;
     ctx.fillText(`${speed}`, 200, 350);
@@ -133,7 +134,6 @@ function drawSpeed(p) {
     let y0 = 350 - 5;
     ctx.font = "14px Arial";
     ctx.fillStyle = white;
-    drawLine([230, y0], [234, y0], white);
     for (let s1 = s0 + 40; s1 > s0 - 40 && s1 >= 0; s1 -= 10) {
 	let y = y0 - (s1 - speed) * 2;
 	drawLine([235, y], [240, y], white);
@@ -141,6 +141,12 @@ function drawSpeed(p) {
 	    ctx.fillText(`${s1}`, 204, y + 3);
 	}
     }
+    // V_ref
+    if (p.vref > (s0 - 40) && p.vref < (s0 + 40)) {
+	let y = y0 - (p.vref - speed) * 2;
+	drawLine([228, y], [245, y], cyan);
+    }
+    drawLine([230, y0], [234, y0], white);
 
     let y1 = y0 - (p.dv * 1500);
     let green = "#00DD00";
@@ -153,6 +159,7 @@ function drawSpeed(p) {
 } // function drawSpeed(p)
 
 function drawAltitude(p) {
+    let dh = 227; // feet
     let x0 = 400;
     let z0 = p.z;
     let dz = p.velz;
@@ -160,6 +167,9 @@ function drawAltitude(p) {
     //let alt = z0 / 0.3048; // feet
     let alt = Math.ceil(z0 * 3.28084); // feet
     let white = "#DDDDDD";
+    let cyan = "#00DDDD";
+    let magenta = "#DD00DD";
+    //let yellow = "#DDDD00";
     ctx.font = "14px Arial";
     ctx.fillStyle = white;
     ctx.fillText(`${alt}`, x0 + 15, 350);
@@ -181,6 +191,11 @@ function drawAltitude(p) {
 	    drawLine([x0, y + 4], [x0 + 20, y + 4], white);
 	    drawLine([x0, y + 6], [x0 + 20, y + 6], white);
 	}
+    }
+    /* DH */
+    if (dh < (a0 + 200) && dh > (a0 - 200)) {
+	let y = yy - (dh - alt) * 0.4;
+	drawLine([x0, y], [x0 + 15, y], magenta);
     }
 
     let y1 = yy - (p.velz * 5);
@@ -375,6 +390,35 @@ function drawHorizontalIndicator(p) {
 	drawLine([cx - 1, cy - y5 - 30], [cx + 1, cy - y5 - 30], white);
     }
 */
+    /* ILS mark */
+    //drawLine([cx - 20, cy],       [cx - 8, cy], red);
+    drawLine([cx + w2, cy - 40], [cx + w2 + 5, cy - 40], white);
+    drawLine([cx + w2, cy - 20], [cx + w2 + 5, cy - 20], white);
+    drawLine([cx + w2, cy     ], [cx + w2 + 10, cy    ], white);
+    drawLine([cx + w2, cy + 20], [cx + w2 + 5, cy + 20], white);
+    drawLine([cx + w2, cy + 40], [cx + w2 + 5, cy + 40], white);
+    
+
+    drawLine([cx - 40, cy + 60], [cx - 40,     cy + 65], white);
+    drawLine([cx - 20, cy + 60], [cx - 20,     cy + 65], white);
+    drawLine([cx,      cy + 60], [cx,          cy + 70], white);
+    drawLine([cx + 20, cy + 60], [cx + 20,     cy + 65], white);
+    drawLine([cx + 40, cy + 60], [cx + 40,     cy + 65], white);
+
+    let magenta = "#DD00DD";
+    if (p.enableILS) {
+	let xx = cx + Math.ceil(p.ILS_loc * 50);
+	let yy = cy + Math.ceil(p.ILS_gs * 50);
+	// LOC
+	if (p.ILS_loc_active) {
+	    drawLine([xx, cy + 58], [xx, cy + 72], magenta);
+	}
+	// G/S
+	if (p.ILS_gs_active) {
+	    drawLine([cx + w2 - 2, yy], [cx + w2 + 12, yy], magenta);
+	}
+    }
+
 } // function drawHorizontalIndicator(p)
 
 function drawForce(p) {

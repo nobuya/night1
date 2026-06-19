@@ -18,7 +18,24 @@ class Airplane {
 	this.bnk = 0;
 	this.yaw = 0;
 
+	this.view_z_offset = 4.5; // m 
 	this.view_h_angle = 0;
+
+	this.tailStrike = false;
+	this.tailStrikePitch = 0;
+
+	this.vref = 140 // KT
+
+	this.enableILS = true;
+	//                  x    y     z   dir
+	this.ILS_loc_pos = [0,  3315, 0]; 
+	this.ILS_gs_pos  = [120, 450, 0];
+	this.ILS_dir     = 180; // degree
+	this.ILS_slope   = 3;   // degree
+	this.ILS_gs = 0;   // -1.0 - 1.0   (1 dot = 0.36 degree)
+	this.ILS_loc = 0;  // -1.0 - 1.0
+	this.ILS_gs_active = false;
+	this.ILS_loc_active = false;
 
 	this.dx = 0.0;
 	//this.dy = 4.0;
@@ -65,14 +82,20 @@ class Airplane {
 	this.rudder   = 0;
 	//
 	this.counter  = 0;
-	
-	this.Lift = [ 65,   80,  90, 105, 120, 135];
-	this.Drag = [ 130, 200, 300, 350, 400, 450];
+
+	//              0      2      5     10   15   30
+	this.Lift = [  65,    80,    90,   105, 120, 135];
+	this.Drag = [ 130,   200,   300,   350, 400, 450];
+	this.FlapRatio = [ 0.0, 0.067, 0.167, 0.333, 0.5, 1.0];
 	this.select = 0;
+	this.flap = this.FlapRatio[this.select];
 	this.select_max = 5;
 	this.ground = (this.z == 0) ? true : false;
+	this.wasOnGround = true;
+	this.touchDownVerticalSpeed = 0; // in feet/min
 	this.brake  = 0; // air brake
 	this.brake_max  = 40;
+	this.prev_brake = 0;
 	this.auto_brake = false;
 	this.fcount = 0;
 	this.sideslip_angle = 0;
@@ -95,6 +118,7 @@ class Airplane {
 	let Cm = calcCm(this.vangle);
 	let roh = calcAirDensity(this.z); // model.js
 	this.temp = calcTemperature(this.z);
+	this.flap = this.FlapRatio[this.select];
 
 	this.cl = CL
 	this.cd = CD
@@ -319,18 +343,31 @@ class Airplane {
     } // update1()
 
     update() {
+	this.wasOnGround = this.ground;
+	this.prev_brake = this.brake;
 	// move
 	this.x += this.dx;
 	this.y += this.dy;
 	this.z += this.dz;
-	if (this.z <= 4) {
+	if (this.z <= 0) {
 	    if (this.dz < 0 && this.auto_brake) {
 		this.brake = this.brake_max;
 	    }
-	    this.z = 4;
+	    if (this.auto_brake && this.wbrake < 60) {
+		this.wbrake += 1;
+	    }
+	    if (this.ptc <= -8) { // tail strike
+		this.tailStrike = true;
+		this.tailStrikePitch = -this.ptc;
+	    } else {
+		this.tailStrike = false;
+	    }
+
+	    this.z = 0;
 	    this.dz = 0;
 	    this.ground = true;
 	} else {
+	    this.touchDownVerticalSpeed = this.velz * 60 * 3.28084 // feet/min
 	    this.ground = false;
 	}
     } // update()
