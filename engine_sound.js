@@ -11,11 +11,13 @@ class EngineSound {
         this.isReverse = false;
         this.n1 = 0;
         this.n2 = 0;
+	this.masterVolume = 0.4;
 
         this.master = this.ctx.createGain();
 
         // マスターボリューム
-        this.master.gain.value = 0.4;
+        this.master.gain.value = this.masterVolume;
+        //this.master.gain.value = 0.4;
         //this.master.gain.value = 0.8;
 
         this.master.connect(this.ctx.destination);
@@ -25,8 +27,33 @@ class EngineSound {
         this.createCore();
         this.createRumble();
 
+	//let reverbNode = this.createReverb(audioContext);
+	//this.master.connect(reverbNode);
+
 //        this.update();
     }
+
+    //
+    // シンプルなリバーブ（インパルス応答生成）                                    //     
+    createReverb(audioCtx) {
+	const duration = 1.5; // 残響時間                                           
+	const sampleRate = audioCtx.sampleRate;
+	const length = sampleRate * duration;
+	const impulse = audioCtx.createBuffer(2, length, sampleRate);
+
+	for (let channel = 0; channel < 2; channel++) {
+            const data = impulse.getChannelData(channel);
+            for (let i = 0; i < length; i++) {
+		data[i] =
+		    (Math.random() * 2 - 1) *
+		    Math.pow(1 - i / length, 2);
+            }
+	}
+	const convolver = audioCtx.createConvolver();
+	convolver.buffer = impulse;
+	return convolver;
+    }
+
 
     //--------------------------------------------------
     // ピンクノイズ
@@ -88,17 +115,29 @@ class EngineSound {
     //--------------------------------------------------
     createFan() {
         this.fan = this.ctx.createOscillator();
+        this.fan2 = this.ctx.createOscillator();
 
         this.fan.type = "sawtooth";
+        this.fan2.type = "sawtooth";
+
+	this.filter = this.ctx.createBiquadFilter();
+	this.filter.type = 'lowpass';
+
+	this.reverbNode = this.createReverb(this.ctx);
 
         this.fanGain = this.ctx.createGain();
 
         this.fanGain.gain.value = 0;
 
-        this.fan.connect(this.fanGain);
+        //this.fan.connect(this.fanGain);
+        this.fan.connect(this.filter);
+        this.fan2.connect(this.filter);
+	this.filter.connect(this.reverbNode);
+	this.reverbNode.connect(this.fanGain);
         this.fanGain.connect(this.master);
 
         this.fan.start();
+        this.fan2.start();
     }
 
     //--------------------------------------------------
@@ -109,6 +148,7 @@ class EngineSound {
             this.ctx.createOscillator();
 
         this.core.type = "triangle";
+        //this.core.type = "sine";
 
         this.coreGain = this.ctx.createGain();
 
@@ -132,8 +172,8 @@ class EngineSound {
 
         this.rumbleGain = this.ctx.createGain();
 
-        //this.rumbleGain.gain.value = 0.05;
-        this.rumbleGain.gain.value = 0.15;
+        this.rumbleGain.gain.value = 0.05;
+        //this.rumbleGain.gain.value = 0.15;
 
         this.rumble.connect(this.rumbleGain);
 
@@ -158,6 +198,14 @@ class EngineSound {
         this.throttle = Math.max(0, Math.min(1, v));
     }
 
+    mute(to) {
+	if (to) {
+	    this.masterVolume = 0.0;
+	} else {
+	    this.masterVolume = 0.4;
+	}
+    }
+
     //--------------------------------------------------
     // 毎フレーム更新
     //--------------------------------------------------
@@ -168,6 +216,9 @@ class EngineSound {
 //        requestAnimationFrame(
 //            () => this.update());
 
+	// マスターボリューム
+        this.master.gain.value = this.masterVolume;
+
         //
         // N1
         //
@@ -175,29 +226,36 @@ class EngineSound {
         let targetN1;
 
         if (this.isReverse) {
-                targetN1 = 50 + this.throttle * 50;
+            targetN1 = 50 + this.throttle * 50;
 	} else {
-		targetN1 = 20 + this.throttle * 80;
+	    targetN1 = 20 + this.throttle * 80;
 	}
-        this.n1 += (targetN1 - this.n1) * 0.01;
+        this.n1 += (targetN1 - this.n1) * 0.005;
 
         //
         // N2
         //
         let targetN2 = 60 + this.throttle * 40;
 
-        this.n2 += (targetN2 - this.n2) * 0.02;
+        this.n2 += (targetN2 - this.n2) * 0.01;
 
         //
         // Fan Blade Passing Frequency
         //
-        const bpf = this.n1 * 18;
+        const bpf  = this.n1 * 18;
+        const bpf2 = this.n1 * 20;
 
         this.fan.frequency.setTargetAtTime(
             bpf,
             this.ctx.currentTime,
             //0.05
-	    0.5
+	    0.25
+	);
+        this.fan2.frequency.setTargetAtTime(
+            bpf,
+            this.ctx.currentTime,
+            //0.05
+	    0.05
 	);
 
         this.fanGain.gain.setTargetAtTime(
@@ -217,7 +275,7 @@ class EngineSound {
             coreFreq,
             this.ctx.currentTime,
             //0.04
-	    0.4
+	    0.2
 	);
 
         this.coreGain.gain.setTargetAtTime(
@@ -225,7 +283,7 @@ class EngineSound {
             this.throttle * 0.03,
             this.ctx.currentTime,
             //0.04
-	    0.4
+	    0.2
 	);
 
         //

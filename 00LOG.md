@@ -1,6 +1,18 @@
 Log
 ---
 
+### 2026-06-21
+
+- add an N1 gauge
+
+
+### 2026-06-20
+
+- fix a bug related to changing the viewpoint
+- improve performance in coordinate transformation processing
+- extend the available range of LOC and G/S (ILS) (18.5 km --> 40.0 km)
+
+
 ### 2026-06-19
 
 - add some sound engines

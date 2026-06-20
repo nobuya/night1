@@ -104,10 +104,13 @@ class Airplane {
 	this.gear_down = this.ground ? 3 : 0; // up 0 / down 3
 	this.gear_status = this.ground ? 180 : 0; // 
 	this.wbrake = 0; // wheel brake
+
+	this.n1 = 0; // 0 - 100 (%) 
 	
     } // constructor(pos)
 
-    model() {
+    //model() {
+    model(fps) {
 	let v0 = this.velocity; // (m/sec)
 	let v_y = this.vely;
 	let v_z = this.velz;
@@ -129,14 +132,19 @@ class Airplane {
 	//let cf_x = 0;
 	//let cf_x = this.mass * v_x * Math.abs(v_x);
 	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.0025;
+
 	
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -300 : 200;
 
+	let targetN1;
 	if (this.thr >= 0) {
 	    this.thrust = this.thrust + d_thrust;
+	    targetN1 = 20 + this.thr * 0.8;
 	} else {
 	    this.thrust = -this.thrust_max * 0.2;
+	    targetN1 = 50 - this.thr * 0.5;
 	}
+	this.n1 += (targetN1 - this.n1) * 0.005;
 
 	let drag0 = this.Drag[this.select];
 	// this.gear_status: up --> 0 / down --> 180
@@ -204,7 +212,8 @@ class Airplane {
 	this.accy = Math.floor(ay * 10000) / 10000;
 	this.accz = Math.floor(az * 10000) / 10000;
 
-	const dt = 1 / 60;
+	//const dt = 1 / 60;
+	const dt = 1 / fps;
 	let vx = this.velx + this.accx * dt;
 	let vy = this.vely + this.accy * dt;
 	let vz = this.velz + this.accz * dt;
@@ -322,10 +331,10 @@ class Airplane {
 	//ptc += (elev < ptc) ? -0.005 : (elev > ptc) ? 0.005 : 0;
     } // attitude()
     
-    update1() {
+    update1(fps) {
 	this.fcount++;
 	this.idelcount++;
-	this.model();
+	this.model(fps);
 	this.attitude();
 	if (this.gear_down == 1) {
 	    this.gear_status++;

@@ -11,11 +11,15 @@ let landingMode = false;
 let landingModePosition = 0;
 let takeoffMode = true;
 let stop = true;
+let soundMute = false;
 
+// gravitational acceleration
 const G = 9.8
 
 let drawCount = 0;
 let drawCount2 = 0;
+
+// frames per seconds
 let fps = 0;
 let lastTime = Date.now(); // (ms)
 
@@ -186,12 +190,32 @@ function calc(p) {
     //let z = p.z;
     let z = p.z + p.view_z_offset;
     let hdg = p.hdg + p.yaw;
-    let v_hdg = hdg + p.view_h_angle;
+    //let v_hdg = hdg + p.view_h_angle;
+    let v_hdg = p.view_h_angle;
     let ptc = p.ptc;
     let bnk = p.bnk;
         
     
     s_points.splice(0); // clear
+
+    // heading
+    let sh = Math.sin(Math.PI * hdg / 180);
+    let ch = Math.cos(Math.PI * hdg / 180);
+    //let sh = Math.sin(Math.PI * v_hdg / 180);
+    //let ch = Math.cos(Math.PI * v_hdg / 180);
+
+    // banking
+    let sb = Math.sin(Math.PI * bnk / 180);
+    let cb = Math.cos(Math.PI * bnk / 180);
+
+    // pitching
+    let sp = Math.sin(Math.PI * ptc / 180);
+    let cp = Math.cos(Math.PI * ptc / 180);
+
+    // view direction
+    let sd = Math.sin(Math.PI * v_hdg / 180);
+    let cd = Math.cos(Math.PI * v_hdg / 180);
+    
     for (let i = 0; i < points.length; i++) {
         let pt = points[i];
         //let x1 = pt[0] - x;
@@ -200,36 +224,39 @@ function calc(p) {
         let x1 = pt.x - x;
         let y1 = pt.y - y;
         let z1 = pt.z - z;
-        // heading
-        //let sh = Math.sin(Math.PI * hdg / 180);
-        let sh = Math.sin(Math.PI * v_hdg / 180);
-        //let ch = Math.cos(Math.PI * hdg / 180);
-        let ch = Math.cos(Math.PI * v_hdg / 180);
-        let x2 = x1 * ch - y1 * sh;
+//        let sh = Math.sin(Math.PI * v_hdg / 180);
+//        let ch = Math.cos(Math.PI * v_hdg / 180);
+	// heading
+	let x2 = x1 * ch - y1 * sh;
         let y2 = y1 * ch + x1 * sh;
         let z2 = z1;
         // banking
-        let sb = Math.sin(Math.PI * bnk / 180);
-        let cb = Math.cos(Math.PI * bnk / 180);
+        //let sb = Math.sin(Math.PI * bnk / 180);
+        //let cb = Math.cos(Math.PI * bnk / 180);
         let x3 = x2 * cb - z2 * sb;
         let y3 = y2;
         let z3 = z2 * cb + x2 * sb;
         // pitching
-        let sp = Math.sin(Math.PI * ptc / 180);
-        let cp = Math.cos(Math.PI * ptc / 180);
+        //let sp = Math.sin(Math.PI * ptc / 180);
+        //let cp = Math.cos(Math.PI * ptc / 180);
         let x4 = x3;
         let y4 = y3 * cp - z3 * sp;
         let z4 = z3 * cp + y3 * sp;
 
-        if (y4 > 0) {
+	// view direction
+	let x5 = x4 * cd - y4 * sd
+	let y5 = y4 * cd + x4 * sd;
+	let z5 = z4;
+	
+        if (y5 > 0) {
             let k = 1000;
-            let sx = x4 / y4 * 0.5 * k + cx;
-            let sy = -z4 / y4 * 0.5 * k + cy;
+            let sx = x5 / y5 * 0.5 * k + cx;
+            let sy = -z5 / y5 * 0.5 * k + cy;
             //let style = pt[3];
             //let type = pt[4];
             let style = pt.style;
             let type = pt.type;
-            s_points.push([sx, sy, y4, style, type]);
+            s_points.push([sx, sy, y5, style, type]);
         }
     }
 } // function calc(p)
@@ -348,6 +375,13 @@ function controle(p) {
     }
     if (keyboard.S) {
         stop = stop ? false : true;
+    }
+    if (keyboard.M && (drawCount % 20 == 0)) {
+	if (soundMute) {
+	    soundMute = false;
+	} else {
+	    soundMute = true;
+	}
     }
     if (keyboard.P) {
         if (drawCount % 30 == 0) {
@@ -553,7 +587,8 @@ function calcILS(plane) {
     let w1 = ly1 * Math.tan(Math.PI * 2.5 / 180.0);
     let loc1 = Math.max(Math.min(lx1 / w1, 1.0), -1.0);
     let loc_active = false;
-    if (ly1 < 18500 && ly1 > 0) {
+    //if (ly1 < 18500 && ly1 > 0) {
+    if (ly1 < 40000 && ly1 > 0) {
 	loc_active = true;
     }
     plane.ILS_loc = loc1;
@@ -568,7 +603,8 @@ function calcILS(plane) {
     let h1 = gy2 * Math.tan(Math.PI * 0.5 / 180.0);
     let gs1 = Math.max(Math.min(gz2 / h1, 1.0), -1.0);
     let gs_active = false;
-    if (gy2 < 18500 && gy2 > 0) {
+    //if (gy2 < 18500 && gy2 > 0) {
+    if (gy2 < 40000 && gy2 > 0) {
 	gs_active = true;
     }
     plane.ILS_gs = gs1;
@@ -589,7 +625,7 @@ function updateAll() {
     controle(plane);
     //attitude();
     //model();
-    plane.update1();
+    plane.update1(fps);
 
     //let alt = plane.z / 0.3048;
     //let alt = Math.ceil(plane.z * 3.28084); // feet
@@ -730,7 +766,9 @@ function drawPoints(p) {
             ctx.fill();
             ctx.closePath();
         } else if (type >= 100) {
-            let c = drawCount % 20;
+            //let c = drawCount % 20;
+	    let c0 = Math.ceil(drawCount * 60 / fps);
+            let c = c0 % 20;
             let sz2 = sz < 2 ? 2 : sz;
             if (c == (type - 140)) {
                 ctx.fillStyle = style;
@@ -830,7 +868,7 @@ function printInfo() {
     ctx.fillStyle = "#eeeeee";
     ctx.fillText("roh: " + roh, 10, 20);
     ctx.fillText("FPS: " + fps, 550, 460);
-    ctx.fillText("points: " + points.length, 550, 475);
+    ctx.fillText("points: " + s_points.length + "/" + points.length, 500, 475);
     
     if (pauseMode) {
         ctx.font = "16px Arial";
@@ -860,6 +898,10 @@ function gameLoop() {
     printInfo();
     if (engine) {
         engine.setThrottle(plane.thr / 100.0);
+	if (soundMute != prevSoundMute) {
+	    engine.mute(soundMute);
+	}
+	prevSoundMute = soundMute;    
         engine.update();
         console.log(engine.ctx.state);
     }
@@ -870,6 +912,7 @@ function gameLoop() {
     }
 } // function gameLoop()
 
+let prevSoundMute;
 
 function gameLoopPauseMode() {
     gameCount++;
@@ -878,6 +921,10 @@ function gameLoopPauseMode() {
     printInfo();
     if (engine) {
         engine.setThrottle(plane.thr / 100.0);
+	if (soundMute != prevSoundMute) {
+	    engine.mute(soundMute);
+	}
+	prevSoundMute = soundMute;    
         engine.update();
     }
     if (pauseMode) {
@@ -911,6 +958,7 @@ function keyDownHandler(e) {
     if (e.keyCode == 74)  keyboard.J      = true; // J
     if (e.keyCode == 75)  keyboard.K      = true; // K
     if (e.keyCode == 76)  keyboard.L      = true; // L
+    if (e.keyCode == 77)  keyboard.M      = true; // M
     if (e.keyCode == 80)  keyboard.P      = true; // P
     if (e.keyCode == 81)  keyboard.Q      = true; // Q
     if (e.keyCode == 82)  keyboard.R      = true; // R
@@ -940,6 +988,7 @@ function keyUpHandler(e) {
     if (e.keyCode == 74)  keyboard.J      = false; // J
     if (e.keyCode == 75)  keyboard.K      = false; // K
     if (e.keyCode == 76)  keyboard.L      = false; // L
+    if (e.keyCode == 77)  keyboard.M      = false; // M
     if (e.keyCode == 80)  keyboard.P      = false; // P
     if (e.keyCode == 81)  keyboard.Q      = false; // Q
     if (e.keyCode == 82)  keyboard.R      = false; // R

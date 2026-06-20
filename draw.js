@@ -105,6 +105,66 @@ function drawHeadingIndicator(p) {
     
 } // function drawHeadingIndicator(p)
 
+function drawN1(p) {
+    let cx = 500;
+    let cy = 280;
+    let r = 25;
+    let r1 = 20;
+    let w = 30;
+    let h = 30;
+    
+    ctx.clearRect(cx - w / 2, cy - h / 2, w, h);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 210 / 180);
+    ctx.strokeStyle = '#DDDDDD';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (let i = 0; i <= 100; i += 10) {
+	let a = (i * 2) * Math.PI / 180;
+	let r2 = 25;
+	let r3 = (i % 50 == 0) ? 21 : 23;
+	let s = Math.sin(a);
+	let c = Math.cos(a);
+	let x2 = cx + c * r2;
+	let y2 = cy + s * r2;
+	let x3 = cx + c * r3;
+	let y3 = cy + s * r3;
+	drawLine([x2, y2], [x3, y3], '#dddddd');
+    }
+
+    const n1 = p.n1; // 0 - 100
+
+    // 0 % = 90 deg.  100 % = 290 deg.
+    const angle = (n1 * 2) * Math.PI / 180.0;
+
+    // needle
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + r1 * Math.cos(angle), cy + r1 * Math.sin(angle));
+    ctx.strokeStyle = '#dddddd';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // box
+    ctx.fillStyle = '#dddddd';
+    ctx.strokeRect(cx - 2, cy - 18, 30, 15);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // value
+    ctx.fillStyle = 'white';
+    ctx.font = '13px Arial';
+    const str = ('   ' + Math.round(n1)).slice(-3);
+    ctx.fillText(str, cx + 5, cy - 5);
+    // N1
+    ctx.fillStyle = 'cyan';
+    ctx.font = '11px Arial';
+    ctx.fillText('N1', cx + 20, cy + 30);
+
+    
+} // function drawN1(p)
+
 function drawHeading(p) {
     let cx = 320;
     let cy = 420;
@@ -724,6 +784,8 @@ function drawInstruments(p) {
     drawAltitude(plane);
     drawHeading(plane);
     drawHeadingIndicator(plane);
+
+    drawN1(plane);
     
 } // function drawInstruments(p)
 
