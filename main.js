@@ -300,6 +300,51 @@ function controle(p) {
                 p.thr = 0;
             }
         }
+	if (keyboard.J && (drawCount == 0)) {
+	    if (p.auto_throttle) {
+		p.auto_throttle = false;
+	    } else {
+		p.auto_throttle = true;
+	    }		
+	}
+	if (keyboard.H && (drawCount == 0)) {
+	    if (p.auto_altitude) {
+		p.auto_altitude = false;
+		p.auto_vspeed = false;
+	    } else {
+		p.auto_altitude = true;
+		p.altitude_hold = false;
+		p.auto_vspeed = true;
+		if (p.target_vspeed == 0) {
+		    let diff = p.target_altitude - (p.z * 3.28084);
+		    if (diff > 0)      p.target_vspeed = 3000;
+		    else if (diff < 0) p.target_vspeed = -3000;
+		    else p.target_vspeed = 0;
+		}
+	    }
+	}
+	if (keyboard.K && (drawCount == 0)) { // Vertical Speed
+	    if (p.auto_altitude) {
+		p.auto_altitude = false;
+		p.auto_vspeed = false;
+	    } else {
+		p.auto_altitude = true;
+		p.auto_vspeed = true;
+	    }
+	}
+	if (keyboard.L && (drawCount == 0)) { // Altitude Hold
+	    if (p.altitude_hold) {
+		p.altitude_hold = false;
+		p.auto_vspeed = false;
+	    } else {
+		p.target_altitude =
+		    Math.round((p.z * 3.28084) / 100) * 100;
+		p.auto_altitude = false;
+		p.altitude_hold = true;
+		p.auto_vspeed = true;
+	    }
+	}
+	
 //      if (keyboard.G && p.gear_down == 0) {
 //          p.gear_down = 1;
 //          p.gear_status = 0;
@@ -364,6 +409,29 @@ function controle(p) {
 //    if (keyboard.Down)  ptc = (ptc - 0.1 + 360) % 360;
     if (keyboard.Up)    if (p.elevator < 25)  p.elevator += 1;
     if (keyboard.Down)  if (p.elevator > -25) p.elevator -= 1;
+    if (keyboard.BracketLeft) if (p.elevator_trim > -50) {
+	p.elevator_trim -= 1;
+    }
+    //if (keyboard.BracketLeft) if (p.elevator > -25) p.elevator -= 1;
+    if (keyboard.BracketRight) if (p.elevator_trim < 50) {
+	p.elevator_trim += 1;
+    }
+    if (keyboard.Num_7) if (p.target_speed > 100) p.target_speed -= 1;
+    if (keyboard.Num_8) if (p.target_speed < 460) p.target_speed += 1;
+    
+    if (keyboard.Num_9) if (p.target_altitude > 500) p.target_altitude -= 100;
+    if (keyboard.Num_0) if (p.target_altitude < 40000) p.target_altitude += 100;
+    if (keyboard.Minus) if (p.target_vspeed > -3000) {
+	p.target_vspeed -= 100;
+	p.target_vspeed = Math.ceil(p.target_vspeed / 100) * 100;
+    }
+    if (keyboard.Equal) if (p.target_vspeed < 3000) {
+	p.target_vspeed += 100;
+	p.target_vspeed = Math.ceil(p.target_vspeed / 100) * 100;
+    }
+
+    
+    //if (keyboard.BracketRight) if (p.elevator < 25) p.elevator += 1;
     if (keyboard.G) {
         if (p.gear_down == 0) { // gear up
             p.gear_down = 1; // start gear down
@@ -867,8 +935,11 @@ function printInfo() {
     ctx.font = "16px Impact";
     ctx.fillStyle = "#eeeeee";
     ctx.fillText("roh: " + roh, 10, 20);
+    ctx.fillText("T_ptc: " + Math.ceil(plane.target_pitch), 550, 445);
     ctx.fillText("FPS: " + fps, 550, 460);
     ctx.fillText("points: " + s_points.length + "/" + points.length, 500, 475);
+    ctx.fillText("remain: " + plane.remain, 350, 475);
+    ctx.fillText("requiredVS: " + plane.required_vs, 200, 475);
     
     if (pauseMode) {
         ctx.font = "16px Arial";
@@ -949,12 +1020,19 @@ function keyDownHandler(e) {
     if (e.keyCode == 39)  keyboard.Right  = true; // ->
     if (e.keyCode == 188) keyboard.Left2  = true; // , <
     if (e.keyCode == 190) keyboard.Right2 = true; // . >
+    if (e.keyCode == 187) keyboard.Equal  = true; // =
+    if (e.keyCode == 189) keyboard.Minus  = true; // -
+    if (e.keyCode == 48)  keyboard.Num_0  = true; // 0
+    if (e.keyCode == 55)  keyboard.Num_7  = true; // 7
+    if (e.keyCode == 56)  keyboard.Num_8  = true; // 8
+    if (e.keyCode == 57)  keyboard.Num_9  = true; // 9
     if (e.keyCode == 65)  keyboard.A      = true; // A
     if (e.keyCode == 66)  keyboard.B      = true; // B
     if (e.keyCode == 68)  keyboard.D      = true; // D
     if (e.keyCode == 69)  keyboard.E      = true; // E
     if (e.keyCode == 70)  keyboard.F      = true; // F
     if (e.keyCode == 71)  keyboard.G      = true; // G
+    if (e.keyCode == 72)  keyboard.H      = true; // H
     if (e.keyCode == 74)  keyboard.J      = true; // J
     if (e.keyCode == 75)  keyboard.K      = true; // K
     if (e.keyCode == 76)  keyboard.L      = true; // L
@@ -968,6 +1046,8 @@ function keyDownHandler(e) {
     if (e.keyCode == 87)  keyboard.W      = true; // W
     if (e.keyCode == 88)  keyboard.X      = true; // X
     if (e.keyCode == 90)  keyboard.Z      = true; // Z
+    if (e.keyCode == 219)  keyboard.BracketLeft  = true; // [
+    if (e.keyCode == 221)  keyboard.BracketRight = true; // ]
 } // function keyDownHandler(e)
 
 // keyboard operation handler (up)
@@ -979,12 +1059,19 @@ function keyUpHandler(e) {
     if (e.keyCode == 39)  keyboard.Right  = false; // ->
     if (e.keyCode == 188) keyboard.Left2  = false; // , <
     if (e.keyCode == 190) keyboard.Right2 = false; // . >
+    if (e.keyCode == 187) keyboard.Equal  = false; // =
+    if (e.keyCode == 189) keyboard.Minus  = false; // -
+    if (e.keyCode == 48)  keyboard.Num_0  = false; // 0
+    if (e.keyCode == 55)  keyboard.Num_7  = false; // 7
+    if (e.keyCode == 56)  keyboard.Num_8  = false; // 8
+    if (e.keyCode == 57)  keyboard.Num_9  = false; // 9
     if (e.keyCode == 65)  keyboard.A      = false; // A
     if (e.keyCode == 66)  keyboard.B      = false; // B
     if (e.keyCode == 68)  keyboard.D      = false; // D
     if (e.keyCode == 69)  keyboard.E      = false; // E
     if (e.keyCode == 70)  keyboard.F      = false; // F
     if (e.keyCode == 71)  keyboard.G      = false; // G
+    if (e.keyCode == 72)  keyboard.H      = false; // H
     if (e.keyCode == 74)  keyboard.J      = false; // J
     if (e.keyCode == 75)  keyboard.K      = false; // K
     if (e.keyCode == 76)  keyboard.L      = false; // L
@@ -998,6 +1085,8 @@ function keyUpHandler(e) {
     if (e.keyCode == 87)  keyboard.W      = false; // W
     if (e.keyCode == 88)  keyboard.X      = false; // X
     if (e.keyCode == 90)  keyboard.Z      = false; // Z
+    if (e.keyCode == 219)  keyboard.BracketLeft  = false; // [
+    if (e.keyCode == 221)  keyboard.BracketRight = false; // ]
 } // function keyUpHandler(e)
 
 // mouse move operation handler

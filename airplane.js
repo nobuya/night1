@@ -80,6 +80,20 @@ class Airplane {
 	this.aileron  = 0;
 	this.elevator = 0;
 	this.rudder   = 0;
+	this.elevator_trim = 0;
+	this.auto_throttle = false;
+	this.target_speed = 200; // knot
+	this.auto_vspeed = false;
+	this.auto_vspeed_integral = 0;
+	this.target_vspeed = 0; // feet/min
+	this.target_pitch = 0;
+	this.auto_altitude = false;
+	this.target_altitude = 3000; // feet
+	this.altitude_hold = false;
+	this.prevTrimError = 0;
+	this.remain = 0;
+	this.required_vs = 0;
+
 	//
 	this.counter  = 0;
 
@@ -105,7 +119,13 @@ class Airplane {
 	this.gear_status = this.ground ? 180 : 0; // 
 	this.wbrake = 0; // wheel brake
 
-	this.n1 = 0; // 0 - 100 (%) 
+	this.n1 = 0; // 0 - 100 (%)
+
+	// autopilot
+	this.vsController = new VSController(this);
+	this.pitchController = new PitchController(this);
+	this.throttleController = new ThrottleController(this);
+	
 	
     } // constructor(pos)
 
@@ -133,8 +153,8 @@ class Airplane {
 	//let cf_x = this.mass * v_x * Math.abs(v_x);
 	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.0025;
 
-	
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -300 : 200;
+	
 
 	let targetN1;
 	if (this.thr >= 0) {
@@ -144,7 +164,7 @@ class Airplane {
 	    this.thrust = -this.thrust_max * 0.2;
 	    targetN1 = 50 - this.thr * 0.5;
 	}
-	this.n1 += (targetN1 - this.n1) * 0.005;
+	this.n1 += (targetN1 - this.n1) * 0.010;
 
 	let drag0 = this.Drag[this.select];
 	// this.gear_status: up --> 0 / down --> 180
@@ -248,7 +268,7 @@ class Airplane {
 
 	this.dbnk = dbnk;
 
-	let dp = 0.10 * dt * this.elevator;
+	let dp = 0.10 * dt * (this.elevator + this.elevator_trim * 0.1);
 	if (velo < 73) {
 	    if (this.vangle > 0) {
 		dp = dp + 0.10 * dt * (this.vangle - this.ptc) * 1.2;
@@ -330,6 +350,279 @@ class Airplane {
 	}
 	//ptc += (elev < ptc) ? -0.005 : (elev > ptc) ? 0.005 : 0;
     } // attitude()
+
+    updateAutoAltitudeOld(targetAltitude,
+		       currentAltitude,
+		       currentVSpeed,
+			  trim,
+		       fps) {
+	const lookAhead = 5.0;
+	const predictedAlt =
+	      currentAltitude + currentVSpeed * 1.0 * lookAhead;
+	const dt = 1 / fps;
+	const altError = targetAltitude - predictedAlt;
+	let targetVS = altError * 0.05;
+	targetVS = Math.max(-10, Math.min(10, targetVS));
+
+	const vsError = targetVS - currentVSpeed;
+	const trimRate = vsError * 0.05;
+
+	this.elevator_trim -= trimRate * dt;
+	this.elevator_trim = Math.max(-30, Math.min(30, this.elevator_trim));
+	return this.elevator_trim;
+    } // updateAutoAltitude(...)
+
+    
+    updateAutoAltitudeOld1(targetAltitude,
+		       currentAltitude, // feet/sec
+		       currentVSpeed,
+		       targetVSpeed,
+		       fps) {
+	const lookAhead = 3.5; // sec
+	const predictedAlt =
+	      currentAltitude + currentVSpeed * lookAhead;
+//	const predictedAlt = currentAltitude
+	const dt = 1 / fps;
+	
+	const altError1 = targetAltitude - currentAltitude;
+	const altError = targetAltitude - predictedAlt;
+	let targetVS = altError * 0.5;
+	targetVS = Math.max(-3000, Math.min(3000, targetVS));
+
+	const vsError = targetVS - currentVSpeed;
+
+	if (currentVSpeed > 0 && targetVS < currentVSpeed) {
+	    //this.target_vspeed -= 100;
+	    this.target_vspeed = this.target_vspeed * 0.8;
+//	    if (this.target_vspeed < 100) this.target_vspeed = 100;
+	} else if (currentVSpeed < 0 && targetVS > currentVSpeed) {
+	    this.target_vspeed = this.target_vspeed * 0.8;
+//	    if (this.target_vspeed > -100) this.target_vspeed = -100;
+	    //this.target_vspeed += 100;
+	}
+	if (altError > 0) {
+	    if (altError < 10) {
+		this.target_vspeed = -5
+	    } else if (altError < 20) {
+		this.target_vspeed = -50;
+            } else if (altError < 50) {
+		this.target_vspeed = -100;
+	    }
+	} else if (altError < 0) {
+	    if (altError > -10) {
+		this.target_vspeed = 5
+	    } else if (altError > -20) {
+		this.target_vspeed = 50;
+            } else if (altError > -50) {
+		this.target_vspeed = 100;
+	    }
+	}
+	if (this.target_vspeed > -1 && this.target_vspeed < 1) {
+	    this.target_vspeed = 0;
+	}
+	//this.target_vspeed = this.target_vspeed  + vsError * 0.3;
+	this.target_vspeed = Math.max(-3000, Math.min(3000, this.target_vspeed));
+
+	return this.target_vspeed;
+    } // updateAutoAltitude(...)
+
+    updateAutoAltitudeOld2(targetAltitude,
+		       currentAltitude, // feet
+		       currentVSpeed,   // feet/sec
+		       targetVSpeed, // feet/min
+		       fps) {
+	const remain = targetAltitude - currentAltitude;
+	const lookAhead = 5.0; // sec
+	const predictedAlt = currentAltitude + currentVSpeed * lookAhead;
+	const dt = 1 / fps;
+
+	const altError = targetAltitude - predictedAlt;
+	//const altError = targetAltitude - currentAltitude;
+	let targetVS = altError * 0.5;
+	targetVS = Math.max(-3000, Math.min(3000, targetVS));
+
+	this.remain = remain;
+	const requiredVS = Math.sign(remain) *
+	      Math.min(Math.abs(targetVS),
+		       Math.sqrt(Math.abs(remain)) * 10);
+	
+	const vsError = requiredVS - currentVSpeed;
+
+	if ((requiredVS > 0 && vsError < 0) ||
+	    (requiredVS < 0 && vsError > 0)) {
+	    //this.target_vspeed = this.target_vspeed * 0.9;
+	    this.target_vspeed = requiredVS;
+	}
+	if (this.target_vspeed > -5 && this.target_vspeed < 5) {
+	    this.target_vspeed = 0;
+	    if (remain) {
+		this.elevator = this.elevator + Math.sign(remain) * 0.7;
+	    }
+	}
+	//this.target_vspeed = this.target_vspeed  + vsError * 0.3;
+	this.target_vspeed = Math.max(-3000, Math.min(3000, this.target_vspeed));
+	
+
+	return this.target_vspeed;
+    }    
+
+    updateAutoAltitude(targetAltitude,
+		       currentAltitude, // feet
+		       currentVSpeed,   // feet/min
+		       targetVSpeed, // feet/min
+		       fps) {
+	const remain = targetAltitude - currentAltitude;
+	const lookAhead = 5.0; // sec
+	const predictedAlt = currentAltitude + currentVSpeed * lookAhead;
+	const dt = 1 / fps;
+
+	const altError = targetAltitude - predictedAlt;
+	//const altError = targetAltitude - currentAltitude;
+	let targetVS = altError * 0.5;
+	targetVS = Math.max(-3000, Math.min(3000, targetVS));
+
+	const requiredVS = Math.sign(remain) *
+	      Math.min(Math.abs(targetVS),
+		       Math.sqrt(Math.abs(remain)) * 15);
+	
+	this.remain = remain;
+	this.required_vs = Math.ceil(requiredVS * 100) / 100;
+	
+	const vsError = requiredVS - currentVSpeed;
+
+//	if ((requiredVS > 0 && vsError < 0) ||
+//	    (requiredVS < 0 && vsError > 0)) {
+//	if (Math.abs(requiredVS) > 0.1) {
+	    //this.target_vspeed = this.target_vspeed * 0.9;
+//	    this.target_vspeed = requiredVS;
+	//	}
+	if (currentVSpeed > 0 &&
+	    (Math.abs(remain) < Math.abs(currentVSpeed / 10)) ||
+	    currentVSpeed < 0 &&
+	    (Math.abs(remain) < Math.abs(currentVSpeed / 5))) {
+	    this.target_vspeed = requiredVS;
+	}
+	if (this.target_vspeed > -0.1 && this.target_vspeed < 0.1) {
+	    this.target_vspeed = 0;
+	    if (remain) {
+		this.elevator = this.elevator + Math.sign(remain) * 0.7;
+	    }
+	}
+	//this.target_vspeed = this.target_vspeed  + vsError * 0.3;
+	this.target_vspeed = Math.max(-3000, Math.min(3000, this.target_vspeed));
+
+	if (Math.abs(remain) < 100) {
+	    this.auto_altitude = false;
+	    this.altitude_hold = true;
+	    this.target_vspeed = Math.sign(remain) * 1000;
+	}
+
+	return this.target_vspeed;
+    } // updateAutoAltitude(targetAltitude, ...)
+
+    updateAltitudeHold(targetAltitude,
+		       currentAltitude, // feet
+		       currentVSpeed,   // feet/min
+		       targetVSpeed, // feet/min
+		       fps) {
+	const dt = 1 / fps;
+
+	const altError = targetAltitude - currentAltitude;
+	
+	let targetVS = altError * 5.0;
+	targetVS = Math.max(-1000, Math.min(1000, targetVS));
+
+	this.target_vspeed = targetVS;
+			 
+    } // updateAltitudeHold(targetAltitude, ...)
+
+    updateAutoVSpeedOld(targetVSpeed,     // (feet/min)
+		     currentVSpeed,    // (feet/min)
+		     pitch,            // (deg)
+		     pitchRate,        // (deg/s)
+		     fps) {
+	const lookAhead = 5.0;
+	const predictedVSpeed = targetVSpeed;
+	const dt = 1 / fps;
+	const k = 1.017;
+	
+	const vsError = targetVSpeed * k - currentVSpeed;
+	const delta = vsError;
+	//this.auto_vspeed_integral = Math.max(-5000, Math.min(5000, delta));
+	
+	const Kp = 0.25;
+	const Kd = 0.0002;
+
+	let targetPitch = -(Kp * vsError + Kd * vsError);
+	targetPitch = Math.max(-10, Math.min(15, targetPitch));
+	this.target_pitch = targetPitch;
+	
+	const pitchError = targetPitch - pitch;
+
+//	this.elevator_trim -= pitchError * 0.40;
+///	this.elevator_trim = Math.max(-15, Math.min(15, this.elevator_trim));
+	this.elevator = pitchError * 0.3;
+	
+    } // updateAutoVSpeed(...)
+
+    updateAutoVSpeed(targetVSpeed,     // (feet/min)
+		     currentVSpeed,    // (feet/min)
+		     pitch,            // (deg)
+		     pitchRate,        // (deg/s)
+		     fps) {
+	const targetPitch = this.vsController.update(targetVSpeed,
+						     currentVSpeed,
+						     fps);
+	const elevator = this.pitchController.update(targetPitch,
+						     pitch,
+						     pitchRate,
+						     fps);
+	this.elevator = elevator;
+    }    
+
+    updateAutoThrottleOld(targetSpeed,
+		       currentSpeed,
+		       currentAccel,
+		       throttle,
+		       fps) {
+	const lookAhead = 5.0;
+	const predictedSpeed =
+	      currentSpeed + (currentAccel * 3600 / 1852) * 100 * lookAhead;
+	const dt = 1 / fps;
+	//const speedError = targetSpeed - currentSpeed;
+	const speedError = targetSpeed - predictedSpeed;
+
+	// 外側ループ
+	let targetAccel = speedError * 0.05;
+
+	targetAccel = Math.max(-1, Math.min(1, targetAccel));
+
+	// 内側ループ
+	const accelError = targetAccel - currentAccel;
+
+	const throttleRate =
+              accelError * 15.0;
+//              accelError * 15.0;
+
+	throttle += throttleRate * dt;
+
+	this.thr = Math.max(1, Math.min(100, throttle));
+
+	return this.thr;
+    } // updateAutoThrottle
+
+    updateAutoThrottle(targetSpeed,  // (knot)
+		       currentSpeed, // (knot)
+		       currentAccel, // (m/sec)
+		       throttle,     // 0 - 100
+		       fps) {
+	const thr = this.throttleController.update(targetSpeed,
+						   currentSpeed,
+						   currentAccel,
+						   throttle,
+						   fps);
+	this.thr = thr;
+    }
     
     update1(fps) {
 	this.fcount++;
@@ -348,6 +641,45 @@ class Airplane {
 		this.gear_down = 0; // gear up
 		this.gear_status = 0;
 	    }
+	}
+	if (this.auto_throttle) {
+	    let spd = Math.ceil(this.velocity * 3600 / 1852); // knot
+	    //let acc = this.dv * 3600 / 1852;
+	    let acc = this.dv;
+	    this.updateAutoThrottle(this.target_speed,
+				    spd,
+				    acc,
+				    this.thr,
+				    fps);
+	}
+	if (this.auto_altitude) {
+	    let alt = Math.ceil(this.z * 3.28084); // feet
+	    let vs = Math.ceil(this.velz * 3.28084 * 60); // feet / min
+	    this.updateAutoAltitude(this.target_altitude,
+				    alt,
+				    vs,
+				    this.target_vspeed, // feet / min
+				    fps);
+	}
+	if (this.altitude_hold) {
+	    let alt = Math.ceil(this.z * 3.28084); // feet
+	    let vs = Math.ceil(this.velz * 3.28084 * 60); // feet / min
+	    this.updateAltitudeHold(this.target_altitude,
+				    alt,
+				    vs,
+				    this.target_vspeed,
+				    fps);
+	}
+	if (this.auto_vspeed) {
+	    let vspd = Math.ceil(this.velz * 3.28084 * 60); // feet/min
+	    let pitch = this.ptc;
+	    let pitchRate = this.dptc * fps; // (deg/sec)
+	    //let acc = this.dv * 3600 / 1852;
+	    this.updateAutoVSpeed(this.target_vspeed,
+				  vspd,
+				  pitch,
+				  pitchRate,
+				  fps);
 	}
     } // update1()
 

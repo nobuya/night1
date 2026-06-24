@@ -95,6 +95,7 @@ function drawHeadingIndicator(p) {
     let dy = ty - p.y;
     let angle = Math.atan2(dx, dy);
     let dir = angle - Math.PI / 180 * heading;
+    let distance = Math.ceil(Math.sqrt(dx * dx + dy * dy) / 1852 * 10) / 10; // nm
     let r7 = rr0 + 1;
     let r8 = r7 + 4;
     let x7 = Math.sin(dir) * r7;
@@ -102,6 +103,11 @@ function drawHeadingIndicator(p) {
     let x8 = Math.sin(dir) * r8;
     let y8 = Math.cos(dir) * r8;
     drawLine([cx + x7, cy - y7], [cx + x8, cy - y8], yellow);
+
+    ctx.font = "12px Arial";
+    ctx.fillStyle = white;
+    ctx.fillText(`${distance} nm`, cx, cy + 55);
+    
     
 } // function drawHeadingIndicator(p)
 
@@ -186,6 +192,8 @@ function drawSpeed(p) {
     let speed = Math.ceil(v0 * 3600 / 1852); // knot
     let white = "#DDDDDD";
     let cyan  = "#00DDDD";
+    let green = "#00DD00";
+    let magenta = "#DD00DD";
     ctx.font = "16px Arial";
     ctx.fillStyle = white;
     ctx.fillText(`${speed}`, 200, 350);
@@ -206,20 +214,37 @@ function drawSpeed(p) {
 	let y = y0 - (p.vref - speed) * 2;
 	drawLine([228, y], [245, y], cyan);
     }
+    // target speed
+    if (p.target_speed > (s0 - 40) && p.target_speed < (s0 + 40)) {
+	let y = y0 - (p.target_speed - speed) * 2;
+	drawLine([228, y], [245, y], magenta);
+    }
+    ctx.font = "14px Arial";
+    ctx.fillStyle = magenta;
+    ctx.fillText(`${p.target_speed}`, 200, 440);
+    if (p.auto_throttle) {
+	ctx.fillText(`A/T`, 230, 440);
+	//ctx.fillText(`A/T (${p.dv})`, 230, 440);
+    }
+
+    
     drawLine([230, y0], [234, y0], white);
 
     let y1 = y0 - (p.dv * 1500);
-    let green = "#00DD00";
+//    let green = "#00DD00";
     drawLine([235, y0], [235, y1], green);
 
     // Mach
     let mach = Math.floor(p.mach * 100) / 100;
     ctx.font = "12px Arial";
+    ctx.fillStyle = '#DDDDDD';
     ctx.fillText(`M ${mach}`, 200, 450);
 } // function drawSpeed(p)
 
 function drawAltitude(p) {
     let dh = 227; // feet
+    let target_alt = p.target_altitude;
+    let target_vs = p.target_vspeed; // feet/min
     let x0 = 400;
     let z0 = p.z;
     let dz = p.velz;
@@ -255,8 +280,24 @@ function drawAltitude(p) {
     /* DH */
     if (dh < (a0 + 200) && dh > (a0 - 200)) {
 	let y = yy - (dh - alt) * 0.4;
+	drawLine([x0, y], [x0 + 15, y], cyan);
+    }
+    /* target */
+    if (target_alt < (a0 + 200) && target_alt > (a0 - 200)) {
+	let y = yy - (target_alt - alt) * 0.4;
 	drawLine([x0, y], [x0 + 15, y], magenta);
     }
+    ctx.font = "12px Arial";
+    ctx.fillStyle = magenta;
+    if (p.altitude_hold) {
+	ctx.fillText(`HOLD`, x0 - 40, 350 + 90);
+    }
+    if (p.auto_altitude) {
+	ctx.fillText(`${target_alt} <<<`, x0, 350 + 90);
+    } else {
+	ctx.fillText(`${target_alt}`, x0, 350 + 90);
+    }
+    
 
     let y1 = yy - (p.velz * 5);
     let green = "#00DD00";
@@ -291,7 +332,36 @@ function drawAltitude(p) {
 	y2 = yy + 2000 * 0.02 - (vs + 2000) * 0.01;
     }
     drawLine([x0 + 70, yy], [x0 + 55, y2], white);
+
+    let y3 = yy - (target_vs * 0.02);
+    if (target_vs >= 4000) {
+	y3 = yy - 3000 * 0.02;
+    } else if (target_vs > 2000) {
+	y3 = yy - 2000 * 0.02 - (target_vs - 2000) * 0.01;
+    } else if (target_vs < -4000) {
+	y3 = yy + 3000 * 0.02;
+    } else if (target_vs < -2000) {
+	y3 = yy + 2000 * 0.02 - (target_vs + 2000) * 0.01;
+    }
+    drawLine([x0 + 70, yy], [x0 + 55, y3], magenta);
     
+    ctx.font = "12px Arial";
+    ctx.fillStyle = magenta;
+    if (p.auto_vspeed) {
+	const tvs = Math.round(target_vs * 100) / 100;
+	if (target_vs > 0) {
+	    ctx.fillText(`+${tvs}`, x0, 350 + 100);
+	} else if (target_vs < 0) {
+	    ctx.fillText(`-${-tvs}`, x0, 350 + 100);
+	} else {
+	    ctx.fillText(`${tvs}`, x0, 350 + 100);
+	}
+    } else {
+	const tvs = Math.round(target_vs * 100) / 100;
+	ctx.fillText(`(${tvs})`, x0, 350 + 100);
+    }
+    
+
 } // function drawAltitude(p) 
 
 function drawHorizontalIndicator(p) {
@@ -309,6 +379,7 @@ function drawHorizontalIndicator(p) {
     let white = "#BBBBBB";
     let bnk = p.bnk;
     let ptc = p.ptc;
+    let target_pitch = p.target_pitch;
 
     for (let b = -30; b <= 30; b += 5) {
 	let r1 = b % 10 == 0 ? r - 1 : r - 3;
@@ -629,6 +700,13 @@ function drawController(p) {
 
     let xx2 =  (p.rudder / 20) * w2 + cx;
     drawLine([xx2, y2 - 3], [xx2, y2 + 3], yellow);
+
+    //let yy2 = -(p.elevatorTrim / 50) * h2 + cy;
+    let yy2 = -(p.elevator / 50) * h2 + cy;
+    drawLine([cx + w2 + 2, yy2], [cx + w2 + 5, yy2], yellow);
+
+    let yy3 = -(p.elevator_trim / 50) * h2 + cy;
+    drawLine([cx + w2 + 7, yy3], [cx + w2 + 9, yy3], yellow);
     
 } // drawController(p)
 

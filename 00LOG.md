@@ -1,6 +1,11 @@
 Log
 ---
 
+### 2026-06-24
+
+- implement autopilot features
+
+
 ### 2026-06-21
 
 - add an N1 gauge
