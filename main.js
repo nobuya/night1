@@ -42,13 +42,13 @@ const canvas = document.getElementById("can");
 const ctx = canvas.getContext("2d");  // context
 
 const audio_ctx = new AudioContext(); // audio context
-const engine = new EngineSound(audio_ctx);
+const engine_sound = new EngineSound(audio_ctx);
 const tire = new TireSkidSound(audio_ctx);
 const landing_sound = new LandingSoundSystem(audio_ctx);
-const gear_sound = new LandingGearSound(audio_ctx, engine.master);
-const flap_sound = new FlapSound(audio_ctx, engine.master);
-const wind_sound = new WindSound(audio_ctx, engine.master);
-const tail_strike_sound = new TailStrikeSound(audio_ctx, engine.master);
+const gear_sound = new LandingGearSound(audio_ctx, engine_sound.master);
+const flap_sound = new FlapSound(audio_ctx, engine_sound.master);
+const wind_sound = new WindSound(audio_ctx, engine_sound.master);
+const tail_strike_sound = new TailStrikeSound(audio_ctx, engine_sound.master);
 
 // set canvas size
 canvas.width  = CANVAS_WIDTH;
@@ -344,6 +344,13 @@ function controle(p) {
 		p.auto_vspeed = true;
 	    }
 	}
+	if (keyboard.Y && (drawCount == 0)) { // HDG SEL
+	    if (p.auto_heading) {
+		p.auto_heading = false;
+	    } else {
+		p.auto_heading = true;
+	    }
+	}
 	
 //      if (keyboard.G && p.gear_down == 0) {
 //          p.gear_down = 1;
@@ -428,6 +435,19 @@ function controle(p) {
     if (keyboard.Equal) if (p.target_vspeed < 3000) {
 	p.target_vspeed += 100;
 	p.target_vspeed = Math.ceil(p.target_vspeed / 100) * 100;
+    }
+
+    if (keyboard.U) {
+	p.target_heading -= 1;
+	if (p.target_heading < 1) {
+	    p.target_heading += 360;
+	}
+    }
+    if (keyboard.I) {
+	p.target_heading += 1;
+	if (p.target_heading > 360) {
+	    p.target_heading -= 360;
+	}
     }
 
     
@@ -935,6 +955,8 @@ function printInfo() {
     ctx.font = "16px Impact";
     ctx.fillStyle = "#eeeeee";
     ctx.fillText("roh: " + roh, 10, 20);
+    ctx.fillText("aileron2: " + plane.aileron2, 10, 35);
+    ctx.fillText("T_bnk: " + plane.target_bank, 10, 50);
     ctx.fillText("T_ptc: " + Math.ceil(plane.target_pitch), 550, 445);
     ctx.fillText("FPS: " + fps, 550, 460);
     ctx.fillText("points: " + s_points.length + "/" + points.length, 500, 475);
@@ -967,14 +989,16 @@ function gameLoop() {
     updateAll();
     drawAll();
     printInfo();
-    if (engine) {
-        engine.setThrottle(plane.thr / 100.0);
+    if (engine_sound) {
+        engine_sound.setThrottle(plane.thr / 100.0);
 	if (soundMute != prevSoundMute) {
-	    engine.mute(soundMute);
+	    engine_sound.mute(soundMute);
 	}
 	prevSoundMute = soundMute;    
-        engine.update();
-        console.log(engine.ctx.state);
+        engine_sound.update(plane.engine.n1,
+			    plane.engine.n2
+			   );
+        console.log(engine_sound.ctx.state);
     }
     if (pauseMode) {
         requestAnimationFrame(gameLoopPauseMode);
@@ -990,13 +1014,15 @@ function gameLoopPauseMode() {
     updateAllPauseMode();
     drawAll();
     printInfo();
-    if (engine) {
-        engine.setThrottle(plane.thr / 100.0);
+    if (engine_sound) {
+        engine_sound.setThrottle(plane.thr / 100.0);
 	if (soundMute != prevSoundMute) {
-	    engine.mute(soundMute);
+	    engine_sound.mute(soundMute);
 	}
 	prevSoundMute = soundMute;    
-        engine.update();
+        engine_sound.update(plane.engine.n1,
+			    plane.engine.n2
+                           );
     }
     if (pauseMode) {
         requestAnimationFrame(gameLoopPauseMode);
@@ -1033,18 +1059,22 @@ function keyDownHandler(e) {
     if (e.keyCode == 70)  keyboard.F      = true; // F
     if (e.keyCode == 71)  keyboard.G      = true; // G
     if (e.keyCode == 72)  keyboard.H      = true; // H
+    if (e.keyCode == 73)  keyboard.I      = true; // I
     if (e.keyCode == 74)  keyboard.J      = true; // J
     if (e.keyCode == 75)  keyboard.K      = true; // K
     if (e.keyCode == 76)  keyboard.L      = true; // L
     if (e.keyCode == 77)  keyboard.M      = true; // M
+    if (e.keyCode == 79)  keyboard.O      = true; // O
     if (e.keyCode == 80)  keyboard.P      = true; // P
     if (e.keyCode == 81)  keyboard.Q      = true; // Q
     if (e.keyCode == 82)  keyboard.R      = true; // R
     if (e.keyCode == 83)  keyboard.S      = true; // S
     if (e.keyCode == 84)  keyboard.T      = true; // T
+    if (e.keyCode == 85)  keyboard.U      = true; // U
     if (e.keyCode == 86)  keyboard.V      = true; // V
     if (e.keyCode == 87)  keyboard.W      = true; // W
     if (e.keyCode == 88)  keyboard.X      = true; // X
+    if (e.keyCode == 89)  keyboard.Y      = true; // Y
     if (e.keyCode == 90)  keyboard.Z      = true; // Z
     if (e.keyCode == 219)  keyboard.BracketLeft  = true; // [
     if (e.keyCode == 221)  keyboard.BracketRight = true; // ]
@@ -1072,18 +1102,22 @@ function keyUpHandler(e) {
     if (e.keyCode == 70)  keyboard.F      = false; // F
     if (e.keyCode == 71)  keyboard.G      = false; // G
     if (e.keyCode == 72)  keyboard.H      = false; // H
+    if (e.keyCode == 73)  keyboard.I      = false; // I
     if (e.keyCode == 74)  keyboard.J      = false; // J
     if (e.keyCode == 75)  keyboard.K      = false; // K
     if (e.keyCode == 76)  keyboard.L      = false; // L
     if (e.keyCode == 77)  keyboard.M      = false; // M
+    if (e.keyCode == 79)  keyboard.O      = false; // O
     if (e.keyCode == 80)  keyboard.P      = false; // P
     if (e.keyCode == 81)  keyboard.Q      = false; // Q
     if (e.keyCode == 82)  keyboard.R      = false; // R
     if (e.keyCode == 83)  keyboard.S      = false; // S
     if (e.keyCode == 84)  keyboard.T      = false; // T
+    if (e.keyCode == 85)  keyboard.U      = false; // U
     if (e.keyCode == 86)  keyboard.V      = false; // V
     if (e.keyCode == 87)  keyboard.W      = false; // W
     if (e.keyCode == 88)  keyboard.X      = false; // X
+    if (e.keyCode == 89)  keyboard.Y      = false; // Y
     if (e.keyCode == 90)  keyboard.Z      = false; // Z
     if (e.keyCode == 219)  keyboard.BracketLeft  = false; // [
     if (e.keyCode == 221)  keyboard.BracketRight = false; // ]

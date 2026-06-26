@@ -78,6 +78,7 @@ class Airplane {
 	this.ptc_mo = 0;
 	//
 	this.aileron  = 0;
+	this.aileron2 = 0;
 	this.elevator = 0;
 	this.rudder   = 0;
 	this.elevator_trim = 0;
@@ -93,6 +94,9 @@ class Airplane {
 	this.prevTrimError = 0;
 	this.remain = 0;
 	this.required_vs = 0;
+	this.auto_heading = false;
+	this.target_heading = 60;
+	this.target_bank = 0; // -25 - +25 (deg)
 
 	//
 	this.counter  = 0;
@@ -119,18 +123,24 @@ class Airplane {
 	this.gear_status = this.ground ? 180 : 0; // 
 	this.wbrake = 0; // wheel brake
 
+	// engine
 	this.n1 = 0; // 0 - 100 (%)
+	this.engine = new Engine();
 
 	// autopilot
 	this.vsController = new VSController(this);
 	this.pitchController = new PitchController(this);
 	this.throttleController = new ThrottleController(this);
+	this.rollController = new RollController(this);
 	
 	
     } // constructor(pos)
 
     //model() {
     model(fps) {
+	//const dt = 1 / 60;
+	const dt = 1 / fps;
+
 	let v0 = this.velocity; // (m/sec)
 	let v_y = this.vely;
 	let v_z = this.velz;
@@ -154,7 +164,9 @@ class Airplane {
 	let cf_x = this.mass * v0 * v0 * this.vhangle * 0.0025;
 
 	let d_thrust = ((this.thrust_max / 100 * this.thr) < this.thrust) ? -300 : 200;
-	
+
+	this.engine.setThrottle(this.thr);
+	this.engine.update(dt, this.z);
 
 	let targetN1;
 	if (this.thr >= 0) {
@@ -232,8 +244,6 @@ class Airplane {
 	this.accy = Math.floor(ay * 10000) / 10000;
 	this.accz = Math.floor(az * 10000) / 10000;
 
-	//const dt = 1 / 60;
-	const dt = 1 / fps;
 	let vx = this.velx + this.accx * dt;
 	let vy = this.vely + this.accy * dt;
 	let vz = this.velz + this.accz * dt;
@@ -262,7 +272,12 @@ class Airplane {
 	    this.dhdg = Math.abs(dh) < 0.002 ? 0.0 : dh * 0.5;
 	}
 
-	let dbnk = 0.20 * this.aileron * dt;
+	let aileron = this.aileron;
+	if (this.aileron2 != 0) {
+	    aileron = aileron + this.aileron2;
+	}
+	//let dbnk = 0.20 * (this.aileron + this.aileron2) * dt;
+	let dbnk = 0.20 * aileron * dt;
 	if (this.bnk > 0 && this.bnk < 3) dbnk -= 0.02;
 	else if (this.bnk < 0 && this.bnk > -3) dbnk += 0.02;
 
@@ -623,8 +638,43 @@ class Airplane {
 						   fps);
 	this.thr = thr;
     }
+
+    normalizeAngle(angle) { 
+	while (angle > 180)
+	    angle -= 360;
+	while (angle < -180)
+	    angle += 360;
+	return angle;         // -180 - 180 (deg)
+    }
+    
+    updateAutoHeading(targetHDG, // 0 - 360
+		      currentHDG,
+		      currentBank, //
+		      rollRate,    // deg/sec
+		      fps) {
+	const hdgError = this.normalizeAngle(targetHDG - currentHDG);
+	//let targetBank = hdgError * 0.5;
+	let targetBank;
+	if (Math.abs(hdgError) > 30) {
+	    targetBank = Math.sign(hdgError) * 25;
+	} else if (Math.abs(hdgError) > 5) {
+	    targetBank = hdgError * 0.8;
+	} else if (Math.abs(hdgError) > 1) {
+	    targetBank = Math.sign(hdgError) * 4;
+	} else {
+	    targetBank = hdgError * 0.5;
+	}
+	targetBank = Math.max(-25, Math.min(25, targetBank));
+	this.target_bank = targetBank;
+	
+	let aileron = this.rollController.update(targetBank,
+						 currentBank,
+						 rollRate);
+	this.aileron2 = aileron;
+    }
     
     update1(fps) {
+	//const dt = 1 / fps;
 	this.fcount++;
 	this.idelcount++;
 	this.model(fps);
@@ -680,6 +730,17 @@ class Airplane {
 				  pitch,
 				  pitchRate,
 				  fps);
+	}
+	if (this.auto_heading) {
+	    const target_hdg = this.target_heading;
+	    const hdg = this.hdg;
+	    const bnk = this.bnk;
+	    const dbnk = this.bnk * fps;
+	    this.updateAutoHeading(target_hdg,
+				   hdg,
+				   bnk,
+				   dbnk,
+				   fps);
 	}
     } // update1()
 

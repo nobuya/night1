@@ -1,5 +1,5 @@
 //
-// sound1.js
+// (engine_sound1.js)
 //
 
 class EngineSound {
@@ -11,7 +11,7 @@ class EngineSound {
         this.isReverse = false;
         this.n1 = 0;
         this.n2 = 0;
-	this.masterVolume = 0.4;
+        this.masterVolume = 0.4;
 
         this.master = this.ctx.createGain();
 
@@ -27,8 +27,8 @@ class EngineSound {
         this.createCore();
         this.createRumble();
 
-	//let reverbNode = this.createReverb(audioContext);
-	//this.master.connect(reverbNode);
+        //let reverbNode = this.createReverb(audioContext);
+        //this.master.connect(reverbNode);
 
 //        this.update();
     }
@@ -36,22 +36,22 @@ class EngineSound {
     //
     // シンプルなリバーブ（インパルス応答生成）                                    //     
     createReverb(audioCtx) {
-	const duration = 1.5; // 残響時間                                           
-	const sampleRate = audioCtx.sampleRate;
-	const length = sampleRate * duration;
-	const impulse = audioCtx.createBuffer(2, length, sampleRate);
+        const duration = 1.5; // 残響時間                                           
+        const sampleRate = audioCtx.sampleRate;
+        const length = sampleRate * duration;
+        const impulse = audioCtx.createBuffer(2, length, sampleRate);
 
-	for (let channel = 0; channel < 2; channel++) {
+        for (let channel = 0; channel < 2; channel++) {
             const data = impulse.getChannelData(channel);
             for (let i = 0; i < length; i++) {
-		data[i] =
-		    (Math.random() * 2 - 1) *
-		    Math.pow(1 - i / length, 2);
+                data[i] =
+                    (Math.random() * 2 - 1) *
+                    Math.pow(1 - i / length, 2);
             }
-	}
-	const convolver = audioCtx.createConvolver();
-	convolver.buffer = impulse;
-	return convolver;
+        }
+        const convolver = audioCtx.createConvolver();
+        convolver.buffer = impulse;
+        return convolver;
     }
 
 
@@ -120,10 +120,10 @@ class EngineSound {
         this.fan.type = "sawtooth";
         this.fan2.type = "sawtooth";
 
-	this.filter = this.ctx.createBiquadFilter();
-	this.filter.type = 'lowpass';
+        this.filter = this.ctx.createBiquadFilter();
+        this.filter.type = 'lowpass';
 
-	this.reverbNode = this.createReverb(this.ctx);
+        this.reverbNode = this.createReverb(this.ctx);
 
         this.fanGain = this.ctx.createGain();
 
@@ -132,8 +132,8 @@ class EngineSound {
         //this.fan.connect(this.fanGain);
         this.fan.connect(this.filter);
         this.fan2.connect(this.filter);
-	this.filter.connect(this.reverbNode);
-	this.reverbNode.connect(this.fanGain);
+        this.filter.connect(this.reverbNode);
+        this.reverbNode.connect(this.fanGain);
         this.fanGain.connect(this.master);
 
         this.fan.start();
@@ -190,7 +190,7 @@ class EngineSound {
         let v;
         if (value < 0) {
             this.isReverse = true;
-            v = -value * 3;
+            v = -value * 4;
         } else {
             this.isReverse = false;
             v = value;
@@ -199,24 +199,24 @@ class EngineSound {
     }
 
     mute(to) {
-	if (to) {
-	    this.masterVolume = 0.0;
-	} else {
-	    this.masterVolume = 0.4;
-	}
+        if (to) {
+            this.masterVolume = 0.0;
+        } else {
+            this.masterVolume = 0.4;
+        }
     }
 
     //--------------------------------------------------
     // 毎フレーム更新
     //--------------------------------------------------
-    update() {
+    updateOld() {
         const n1Rate = 0.8;
         const n2Rate = 1.8;
         
 //        requestAnimationFrame(
 //            () => this.update());
 
-	// マスターボリューム
+        // マスターボリューム
         this.master.gain.value = this.masterVolume;
 
         //
@@ -227,9 +227,9 @@ class EngineSound {
 
         if (this.isReverse) {
             targetN1 = 50 + this.throttle * 50;
-	} else {
-	    targetN1 = 20 + this.throttle * 80;
-	}
+        } else {
+            targetN1 = 20 + this.throttle * 80;
+        }
         this.n1 += (targetN1 - this.n1) * 0.005;
 
         //
@@ -249,22 +249,22 @@ class EngineSound {
             bpf,
             this.ctx.currentTime,
             //0.05
-	    0.25
-	);
+            0.25
+        );
         this.fan2.frequency.setTargetAtTime(
             bpf,
             this.ctx.currentTime,
             //0.05
-	    0.05
-	);
+            0.05
+        );
 
         this.fanGain.gain.setTargetAtTime(
             0.02 +
             this.throttle * 0.06,
             this.ctx.currentTime,
             //0.05
-	    0.5
-	);
+            0.5
+        );
 
         //
         // Core
@@ -275,78 +275,221 @@ class EngineSound {
             coreFreq,
             this.ctx.currentTime,
             //0.04
-	    0.2
-	);
+            0.2
+        );
 
         this.coreGain.gain.setTargetAtTime(
             0.01 +
             this.throttle * 0.03,
             this.ctx.currentTime,
             //0.04
-	    0.2
-	);
+            0.2
+        );
 
         //
         // Jet Noise
         //
-	let noiseLevel;
-	let noiseFreq;
+        let noiseLevel;
+        let noiseFreq;
 
-	if (this.isReverse) {
-	    noiseLevel = 0.25 * this.throttle * 0.75;
-	    noiseFreq = 2000 + this.throttle * 5000;
-	} else {
-	    noiseLevel = 0.50 * this.throttle * 0.35;
-	    noiseFreq = 200 + this.throttle * 4000;
-	}
+        if (this.isReverse) {
+            noiseLevel = 0.25 * this.throttle * 0.75;
+            noiseFreq = 2000 + this.throttle * 5000;
+        } else {
+            noiseLevel = 0.50 * this.throttle * 0.35;
+            noiseFreq = 200 + this.throttle * 4000;
+        }
 
-	
+        
         this.noiseFilter.frequency
             .setTargetAtTime(
                 //200 + this.throttle * 4000,
                 noiseFreq,  
                 this.ctx.currentTime,
                 //0.05
-		0.1
-	    );
+                0.1
+            );
 
         this.noiseGain.gain
             .setTargetAtTime(
                 //0.05 + this.throttle * 0.35,
                 //0.10 + this.throttle * 0.60,
-		noiseLevel,
+                noiseLevel,
                 this.ctx.currentTime,
                 //0.05
-		0.1
-	    );
+                0.1
+            );
 
         //
         // Low frequency rumble
         //
-	let rumbleGain;
+        let rumbleGain;
 
-	if (this.isReverse) {
-	    rumbleGain = 0.10 + this.throttle * 0.20;
-	} else {
-	    rumbleGain = 0.03 + this.throttle * 0.12;
-	}
-	
+        if (this.isReverse) {
+            rumbleGain = 0.10 + this.throttle * 0.20;
+        } else {
+            rumbleGain = 0.03 + this.throttle * 0.12;
+        }
+        
         this.rumble.frequency
             .setTargetAtTime(
                 25 + this.throttle * 45,
                 this.ctx.currentTime,
                 //0.05
-		0.5
-	    );
+                0.5
+            );
 
         this.rumbleGain.gain
             .setTargetAtTime(
                 //0.03 + this.throttle * 0.12,
-		rumbleGain,
+                rumbleGain,
                 this.ctx.currentTime,
                 //0.05
-		0.5
-	    );
+                0.5
+            );
+    } // update()
+
+    //--------------------------------------------------
+    // 毎フレーム更新
+    //--------------------------------------------------
+    update(n1, n2) {
+        const n1Rate = 0.8;
+        const n2Rate = 1.8;
+        
+//        requestAnimationFrame(
+//            () => this.update());
+
+        // マスターボリューム
+        this.master.gain.value = this.masterVolume;
+
+        //
+        // N1
+        //
+//        let targetN1;
+
+//        if (this.isReverse) {
+//            targetN1 = 50 + this.throttle * 50;
+//        } else {
+//            targetN1 = 20 + this.throttle * 80;
+//        }
+//        this.n1 += (targetN1 - this.n1) * 0.005;
+	this.n1 = n1;
+
+        //
+        // N2
+        //
+//        let targetN2 = 60 + this.throttle * 40;
+//        this.n2 += (targetN2 - this.n2) * 0.01;
+	this.n2 = n2;
+
+        //
+        // Fan Blade Passing Frequency
+        //
+        const bpf  = this.n1 * 18;
+        const bpf2 = this.n1 * 20;
+
+        this.fan.frequency.setTargetAtTime(
+            bpf,
+            this.ctx.currentTime,
+            //0.05
+            0.25
+        );
+        this.fan2.frequency.setTargetAtTime(
+            bpf,
+            this.ctx.currentTime,
+            //0.05
+            0.05
+        );
+
+        this.fanGain.gain.setTargetAtTime(
+            0.02 +
+            this.throttle * 0.06,
+            this.ctx.currentTime,
+            //0.05
+            0.5
+        );
+
+        //
+        // Core
+        //
+        const coreFreq = 400 + this.n2 * 25;
+
+        this.core.frequency.setTargetAtTime(
+            coreFreq,
+            this.ctx.currentTime,
+            //0.04
+            0.2
+        );
+
+        this.coreGain.gain.setTargetAtTime(
+            0.01 +
+            this.throttle * 0.03,
+            this.ctx.currentTime,
+            //0.04
+            0.2
+        );
+
+        //
+        // Jet Noise
+        //
+        let noiseLevel;
+        let noiseFreq;
+
+        if (this.isReverse) {
+            noiseLevel = 0.25 * this.throttle * 0.75;
+            noiseFreq = 2000 + this.throttle * 5000;
+        } else {
+            noiseLevel = 0.50 * this.throttle * 0.35;
+            noiseFreq = 200 + this.throttle * 4000;
+        }
+
+        
+        this.noiseFilter.frequency
+            .setTargetAtTime(
+                //200 + this.throttle * 4000,
+                noiseFreq,  
+                this.ctx.currentTime,
+                //0.05
+                0.1
+            );
+
+        this.noiseGain.gain
+            .setTargetAtTime(
+                //0.05 + this.throttle * 0.35,
+                //0.10 + this.throttle * 0.60,
+                noiseLevel,
+                this.ctx.currentTime,
+                //0.05
+                0.1
+            );
+
+        //
+        // Low frequency rumble
+        //
+        let rumbleGain;
+
+        if (this.isReverse) {
+            rumbleGain = 0.10 + this.throttle * 0.20;
+        } else {
+            rumbleGain = 0.03 + this.throttle * 0.12;
+        }
+        
+        this.rumble.frequency
+            .setTargetAtTime(
+                25 + this.throttle * 45,
+                this.ctx.currentTime,
+                //0.05
+                0.5
+            );
+
+        this.rumbleGain.gain
+            .setTargetAtTime(
+                //0.03 + this.throttle * 0.12,
+                rumbleGain,
+                this.ctx.currentTime,
+                //0.05
+                0.5
+            );
     } // update()
 } // class EngineSound
 

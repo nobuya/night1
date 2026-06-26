@@ -1,6 +1,11 @@
 Log
 ---
 
+### 2026-06-26
+
+- modify engine model
+
+
 ### 2026-06-24
 
 - implement autopilot features

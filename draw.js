@@ -26,6 +26,7 @@ function drawHeadingIndicator(p) {
     let red = "#DD0000";
     let white = "#DDDDDD";
     let cyan = "#00DDDD";
+    let magenta = "#DD00DD";
     let yellow = "#DDDD00";
     let h0 = 20;
     let w0 = 30
@@ -36,6 +37,21 @@ function drawHeadingIndicator(p) {
 
     let heading = (Math.ceil(p.hdg + p.yaw) + 360) % 360;
     if (heading == 0) heading = 360;
+
+    let target_hdg = (Math.ceil(p.target_heading - p.hdg) + 360) % 360;
+    if (target_hdg == 0) target_hdg = 360;
+
+    // target heading
+    const rr00 = 25;
+    const rr01 = 44;
+    const st = Math.sin(Math.PI / 180 * target_hdg);
+    const ct = Math.cos(Math.PI / 180 * target_hdg);
+    let xx0 = cx + st * rr00
+    let xx1 = cx + st * rr01
+    let yy0 = cy - ct * rr00
+    let yy1 = cy - ct * rr01
+    drawLine([xx0, yy0], [xx1, yy1], magenta);
+    
 
     let x0 = Math.sin(Math.PI / 180 * heading) * r0;
     let y0 = Math.cos(Math.PI / 180 * heading) * r0;
@@ -107,8 +123,7 @@ function drawHeadingIndicator(p) {
     ctx.font = "12px Arial";
     ctx.fillStyle = white;
     ctx.fillText(`${distance} nm`, cx, cy + 55);
-    
-    
+
 } // function drawHeadingIndicator(p)
 
 function drawN1(p) {
@@ -139,7 +154,8 @@ function drawN1(p) {
 	drawLine([x2, y2], [x3, y3], '#dddddd');
     }
 
-    const n1 = p.n1; // 0 - 100
+    //const n1 = p.n1; // 0 - 100
+    const n1 = p.engine.n1; // 0 - 100
 
     // 0 % = 90 deg.  100 % = 290 deg.
     const angle = (n1 * 2) * Math.PI / 180.0;
@@ -168,6 +184,47 @@ function drawN1(p) {
     ctx.font = '11px Arial';
     ctx.fillText('N1', cx + 20, cy + 30);
 
+//    const n1_2 = p.engine.n1;
+//    ctx.fillStyle = 'white';
+//    ctx.font = '13px Arial';
+//    const str2 = ('   ' + Math.round(n1_2)).slice(-3);
+//    ctx.fillText(str2, cx + 5, cy - 20);
+//    const n2_2 = p.engine.n2;
+//    const str3 = ('   ' + Math.round(n2_2)).slice(-3);
+//    ctx.fillText(str3, cx + 5, cy - 35);
+
+    // EGT
+    const egt = p.engine.egt;
+    const str4 = Math.round(egt * 10) / 10;
+    ctx.fillStyle = 'white';
+    ctx.font = '12px Arial';
+    ctx.fillText(str4, cx, cy + 45);
+    ctx.fillStyle = 'cyan';
+    ctx.font = '11px Arial';
+    ctx.fillText('EGT', cx - 30, cy + 45);
+
+    // N2
+    const n2 = p.engine.n2;
+    const str3 = ('   ' + Math.round(n2)).slice(-3);
+    ctx.fillStyle = 'white';
+    ctx.font = '12px Arial';
+    ctx.fillText(str3, cx, cy + 55);
+    ctx.fillStyle = 'cyan';
+    ctx.font = '11px Arial';
+    ctx.fillText('N2', cx - 30, cy + 55);
+    
+    // fuel flow
+    const ff = p.engine.fuel_flow;
+    const str_ff = Math.round(ff);
+    ctx.fillStyle = 'white';
+    ctx.font = '12px Arial';
+    ctx.fillText(str_ff, cx, cy + 65);
+    ctx.fillStyle = 'cyan';
+    ctx.font = '11px Arial';
+    ctx.fillText('FF', cx - 30, cy + 65);
+    
+    
+
     
 } // function drawN1(p)
 
@@ -176,7 +233,11 @@ function drawHeading(p) {
     let cy = 420;
     let heading = (Math.ceil(p.hdg + p.yaw) + 360) % 360;
     let rate  = Math.ceil(p.dhdg * 60 * 60);
+    let target_hdg = (Math.ceil(p.target_heading) + 360) % 360;
     let white = "#DDDDDD";
+    let magenta = "#DD00DD";
+    let green = "#00DD00";
+    
     
     ctx.font = "14px Arial";
     ctx.fillStyle = white;
@@ -185,6 +246,16 @@ function drawHeading(p) {
     ctx.fillText(`${heading}`, cx - 12, cy);
     //ctx.fillText(`${p.yaw}`, cx - 12, cy + 20);
     ctx.fillText(`${rate}`, cx - 12, cy + 40);
+
+    if (target_hdg == 0) target_hdg = 360;
+    if (p.auto_heading) {
+	ctx.fillStyle = green;
+    } else {
+	ctx.fillStyle = magenta;
+    }
+    ctx.fillText(`${target_hdg}`, cx - 12, cy + 15);
+
+
 } // function drawHeading(p)
 
 function drawSpeed(p) {
@@ -265,35 +336,35 @@ function drawAltitude(p) {
     ctx.fillStyle = white;
     drawLine([x0 + 6, yy], [x0 + 10, yy], white);
     for (let a1 = a0 + 200; a1 > a0 - 200 && a1 >= 0; a1 -= 100) {
-	let y = yy - (a1 - alt) * 0.4;
-	drawLine([x0, y], [x0 + 5, y], white);
-	if (a1 >= (alt + 50) || a1 <= (alt - 50)) {
-	    ctx.fillText(`${a1}`, x0 + 15, y + 3);
-	}
-	if (a1 == 0) {
-	    drawLine([x0, y], [x0 + 30, y], white);
-	    drawLine([x0, y + 2], [x0 + 20, y + 2], white);
-	    drawLine([x0, y + 4], [x0 + 20, y + 4], white);
-	    drawLine([x0, y + 6], [x0 + 20, y + 6], white);
-	}
+        let y = yy - (a1 - alt) * 0.4;
+        drawLine([x0, y], [x0 + 5, y], white);
+        if (a1 >= (alt + 50) || a1 <= (alt - 50)) {
+            ctx.fillText(`${a1}`, x0 + 15, y + 3);
+        }
+        if (a1 == 0) {
+            drawLine([x0, y], [x0 + 30, y], white);
+            drawLine([x0, y + 2], [x0 + 20, y + 2], white);
+            drawLine([x0, y + 4], [x0 + 20, y + 4], white);
+            drawLine([x0, y + 6], [x0 + 20, y + 6], white);
+        }
     }
     /* DH */
-    if (dh < (a0 + 200) && dh > (a0 - 200)) {
-	let y = yy - (dh - alt) * 0.4;
-	drawLine([x0, y], [x0 + 15, y], cyan);
+    if (dh < (alt + 200) && dh > (alt - 200)) {
+        let y = yy - (dh - alt) * 0.4;
+        drawLine([x0, y], [x0 + 15, y], cyan);
     }
     /* target */
-    if (target_alt < (a0 + 200) && target_alt > (a0 - 200)) {
-	let y = yy - (target_alt - alt) * 0.4;
-	drawLine([x0, y], [x0 + 15, y], magenta);
+    if (target_alt < (alt + 200) && target_alt > (alt - 200)) {
+        let y = yy - (target_alt - alt) * 0.4;
+        drawLine([x0, y], [x0 + 15, y], magenta);
     }
     ctx.font = "12px Arial";
     ctx.fillStyle = magenta;
     if (p.altitude_hold) {
-	ctx.fillText(`HOLD`, x0 - 40, 350 + 90);
+        ctx.fillText(`HOLD`, x0 - 40, 350 + 90);
     }
     if (p.auto_altitude) {
-	ctx.fillText(`${target_alt} <<<`, x0, 350 + 90);
+        ctx.fillText(`${target_alt} <<<`, x0, 350 + 90);
     } else {
 	ctx.fillText(`${target_alt}`, x0, 350 + 90);
     }
